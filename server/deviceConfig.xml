@@ -1,0 +1,21 @@
+<hosts>
+   <host>
+      <name>buzz</name>
+      <domain>tail-f.com</domain>
+      <defgw>192.168.1.1</defgw>
+      <interfaces>
+          <interface>
+              <name>eth0</name>
+              <ip>192.168.1.61</ip>
+              <mask>255.255.255.0</mask>
+              <enabled>true</enabled>
+          </interface>
+          <interface>
+              <name>eth1</name>
+              <ip>10.77.1.44</ip>
+              <mask>255.255.0.0</mask>
+              <enabled>false</enabled>
+          </interface>
+      </interfaces>
+   </host>
+</hosts>

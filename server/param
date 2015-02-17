@@ -1,0 +1,23 @@
+# Directory where log files will be kept
+LOGDIR  story;
+
+# Size of one log file
+LOGSIZE 200000;
+
+# Max number of log files to keep, oldest file will be deleted
+NUMLOGS 6;
+
+# Listening PORT number for the Server
+SERVERPORT  3500;
+
+# Maximum number of clients possible
+MAXCLIENTS 25;
+
+# Max number of data stores
+MAXDATASTORES 50;
+
+# Define data stores: Data Store Name, its xmlData file, XSD dir, and XSLT dir
+DATASTORE runtime deviceConfig.xml;
+#DATASTORE runtime deviceConfig.xml XSD_runtime XSLT_runtime;
+#DATASTORE status  status.xml       XSD_status  XSLT_status;
+

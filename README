@@ -1,0 +1,18 @@
+1) To build, use 'make'.
+2) To clean, use 'make clean'.
+3) To run server listening on 3500 port:
+      cd server
+      ./sysrepod param
+
+   In another XTERM window start sample client that talks SRD (Sys Repo Daemon) protocol:
+     cd client_SRD
+     # To run client that issues a few commands and exits. Server keeps running.
+     ./clientsrd          
+
+4) One can run many clients in parallel from separate XTERM windows.
+5) ClientSRD.cpp implements a client class that talks SRD protocol. One can create additional classes
+   for different protocols by deriving from the base class Client implemented in Client.cpp.
+6) mainSRDClient.cpp implements a sample client that talks SRD.
+7) mainSysRedoD.cpp implements the SysRepo Daemon. 
+8) DataStore.cpp implements the Data Store class. One can have many Data Stores.
+9) libsrd.a is the library that any client talking SRD protocol will link with.
