@@ -6,7 +6,7 @@
 
    In another XTERM window start sample client that talks SRD (Sys Repo Daemon) protocol:
      cd client_SRD
-     # To run client that issues a few commands and exits. Server keeps running.
+     # To run client that issues a few commands and exits.
      ./clientsrd          
 
 4) One can run many clients in parallel from separate XTERM windows.
@@ -16,3 +16,4 @@
 7) mainSysRedoD.cpp implements the SysRepo Daemon. 
 8) DataStore.cpp implements the Data Store class. One can have many Data Stores.
 9) libsrd.a is the library that any client talking SRD protocol will link with.
+   To understand the API Calls available in libsrd.a, look at the file srd.h.
