@@ -1,0 +1,9 @@
+*o
+clientsrd
+sysrepod
+
+Doxyfile
+TAGS
+doxy/
+libsrd.a
+server/story/
