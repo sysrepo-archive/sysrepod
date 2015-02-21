@@ -24,6 +24,7 @@ private:
 	char fileName[PATHLEN + 1];
 	char xsdDir [PATHLEN + 1];
 	char xsltDir[PATHLEN +1];
+	int udpateSelectedNodes (xmlNodeSetPtr nodes, xmlChar *newValue);
 
 	xmlXPathObjectPtr getNodeSet (xmlChar *xpath, char *log);
 public:
@@ -34,8 +35,11 @@ public:
 	DataStore(char *filename, char *dsname, char * xsddir, char *xsltdir);
 	virtual ~DataStore();
 	bool initialize (void);
-	void lockDS (void);
-	void unlockDS(void);
+	int lockDS (void);
+	int unlockDS(void);
+	int applyXPath (xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset);
+	int printElementSet (xmlNodeSet *nodeSet, char **printBuffPtr, int printBuffSize, int initialOffset);
+	int updateNodes (xmlChar *xpath, xmlChar *newValue, char *log);
 };
 
 #endif /* DATASTORE_H_ */

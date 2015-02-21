@@ -25,50 +25,13 @@ Client_SRD::~Client_SRD() {
 	// TODO Auto-generated destructor stub
 }
 
-static int
-print_element_set(xmlDocPtr doc, xmlNodeSet * nodeSet, char **printBuffPtr, int initialOffset, int printBuffSize)
-{
-    xmlNode *cur_node = NULL;
-    int n, i;
-    int offset = initialOffset;
-    xmlChar *value;
-    xmlBuffer *buff;
-    int lastOffset = initialOffset + 2; // length of </ok></xml>
-    int size = printBuffSize;
-    char *newSpace;
-
-    for (i=0; i < nodeSet->nodeNr; i++) {
-    	cur_node = nodeSet->nodeTab[i];
-        if (cur_node->type == XML_ELEMENT_NODE) {
-           buff = xmlBufferCreate ();
-           xmlNodeDump (buff, doc,cur_node, 0, 1 );
-           if (size < (offset + strlen((char *)buff->content) + lastOffset + 1)){
-        	   size = offset + strlen((char *)buff->content) + lastOffset + 1;
-        	   newSpace = (char *)realloc (*printBuffPtr, size);
-        	   if (newSpace){
-        		   *printBuffPtr = newSpace;
-        	   } else {
-        		   // unable to allocate space
-        		   xmlBufferFree (buff);
-        		   return -1;
-        	   }
-           }
-           n = sprintf (*printBuffPtr+offset, "%s", buff->content);
-           offset = offset + n;
-           xmlBufferFree (buff);
-        }
-    }
-    return (offset-initialOffset);
-}
-
-
 int
 Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize, struct clientInfo *cinfo)
 {
 	xmlDocPtr doc;
 	xmlChar xpath[100];
 	xmlChar *command;
-	xmlChar *param1;
+	xmlChar *param1, *param2;
 	int retValue = 0;
 
 	strcpy((char *)xpath, "/xml/command");
@@ -108,29 +71,21 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 	    if(param1 == NULL){
 		     sprintf (outBuffer, "<xml><error>XPath expression not found</error></xml>");
 		} else {
-            xmlXPathObjectPtr objset;
-            char log [200];
-            objset =  ClientSet::GetNodeSet (cinfo->dataStore->doc, param1, log);
-            if (!objset){
-            	// error
-            	sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
-            } else {
-            	int offset1 = 0, n;
-            	int printBuffSize = 100;
-
-            	printBuff = (char *)malloc (printBuffSize);
-            	offset1 = sprintf (printBuff, "<xml><ok>");
-            	n = print_element_set (cinfo->dataStore->doc, objset->nodesetval, &printBuff, offset1, printBuffSize);
-            	if (n < 0){
-            		// error
-            		sprintf (outBuffer, "<xml><error>Unable to print contents.</error></xml>");
-            		free (printBuff);
-            		printBuff = NULL;
-            	} else {
-            	   strcat (printBuff, "</ok></xml>");
-            	}
-            	xmlXPathFreeObject (objset);
-            }
+			int offset1 = 0;
+			int printBuffSize = 100;
+			printBuff = (char *)malloc (printBuffSize);
+			if (!printBuff){
+				sprintf (outBuffer, "<xml><error>Unable to allocate buffer space</error></xml>");
+			} else {
+				offset1 = sprintf(printBuff, "<xml><ok>");
+				if (!cinfo->dataStore->applyXPath (param1, &printBuff, printBuffSize, offset1)){
+					sprintf (outBuffer, "<xml><error>%s</error></xml>", printBuff);
+					free (printBuff);
+					printBuff = NULL;
+				} else {
+					strcat (printBuff, "</ok></xml>");
+				}
+			}
 			xmlFree(param1);
 	    }
 	    if (printBuff == NULL){
@@ -139,6 +94,51 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		   common::SendMessage(cinfo->sock, printBuff);
 		   free (printBuff);
 		}
+	} else if (strcmp ((char *)command, "lock_dataStore") == 0){
+        if(!cinfo->dataStore->lockDS()){
+        	sprintf (outBuffer, "<xml><ok/></xml>");
+        	common::SendMessage(cinfo->sock, outBuffer);
+        } else {
+        	sprintf (outBuffer, "<xml><error>Unable to lock data store %s</error></xml>", cinfo->dataStore->name);
+        	common::SendMessage(cinfo->sock, outBuffer);
+        }
+	} else if (strcmp ((char *)command, "unlock_dataStore") == 0){
+		if(!cinfo->dataStore->unlockDS()){
+		    sprintf (outBuffer, "<xml><ok/></xml>");
+		    common::SendMessage(cinfo->sock, outBuffer);
+		} else {
+		    sprintf (outBuffer, "<xml><error>Unable to unlock data store %s</error></xml>", cinfo->dataStore->name);
+		    common::SendMessage(cinfo->sock, outBuffer);
+		}
+	} else if (strcmp ((char *)command, "update_nodes") == 0){
+		// param1 contains xpath, param2 contains new value
+		strcpy ((char *) xpath, "/xml/param1");
+		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+		if(param1 == NULL){
+		    sprintf (outBuffer, "<xml><error>Value of xpath not found</error></xml>");
+		    common::SendMessage(cinfo->sock, outBuffer);
+		} else {
+			char log[100];
+
+			strcpy ((char *) xpath, "/xml/param2");
+			param2 = ClientSet::GetFirstNodeValue(doc, xpath);
+			if(param2 == NULL){
+			    sprintf (outBuffer, "<xml><error>New value not found</error></xml>");
+			    common::SendMessage(cinfo->sock, outBuffer);
+			} else {
+				int numNodesModified;
+                numNodesModified = cinfo->dataStore->updateNodes (param1, param2, log);
+                if (numNodesModified < 0){
+                	sprintf (outBuffer, "<xml><error>Error in modifying nodes: %s</error></xml>", log);
+                } else {
+                	sprintf (outBuffer, "<xml><ok>%d</ok></xml>",numNodesModified);
+                }
+                common::SendMessage(cinfo->sock, outBuffer);
+				xmlFree (param2);
+			}
+		    xmlFree (param1);
+		}
+
 	}else if (strcmp ((char *)command, "terminate") == 0){ // terminate this server
 		retValue = -1;
 		sprintf (outBuffer, "<xml><ok/></xml>");

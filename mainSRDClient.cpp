@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "srd.h"
 
@@ -30,7 +31,9 @@ int main(int argc, char**argv)
    int  msgSize, totalMsgSize;
    int serverPort = 3500;
    char dataStoreName [] = "runtime";
-   char xpath[] = "/hosts/host/interfaces/interface/name";
+   char xpath[100];
+   char *value;
+   char newValue[100];
 
    if (argc != 2)
       serverIP = defaultServerIP;
@@ -47,10 +50,36 @@ int main(int argc, char**argv)
 	   srd_disconnect (sockfd);
 	   exit (1);
    }
-   srd_applyXPath (sockfd, xpath);
+   strcpy (xpath, "/hosts/host/interfaces/interface/name");
+   srd_applyXPath (sockfd, xpath, &value);
+   if (value){
+	   printf ("Result of XPATH is: %s\n", value);
+	   free (value);
+   } else {
+	   printf ("Result of XPATH not found.\n");
+   }
 
-   //srd_disconnect (sockfd);
-   srd_terminateServer (sockfd);
+   // change the name of the first interface to 'new_eth0'
+   strcpy (xpath, "/hosts/host/interfaces/interface[1]/name");
+   strcpy (newValue, "new_eth0");
+   n = srd_updateNodes (sockfd, xpath, newValue);
+   if (n < 0){
+	   printf ("Error in updating the value of %s.\n", xpath);
+   } else {
+	   printf ("Successfully updated value of '%s' \n     with a new value = '%s'\nNumber of nodes modified = %d\n", xpath, newValue, n);
+   }
+   // Print content again
+   strcpy (xpath, "/hosts/host/interfaces/interface/name");
+   srd_applyXPath (sockfd, xpath, &value);
+   if (value){
+   	   printf ("Result of XPATH is: %s\n", value);
+   	   free (value);
+   } else {
+   	   printf ("Result of XPATH not found.\n");
+   }
+
+   srd_disconnect (sockfd); // disconnect this client, leave server running
+   // srd_terminateServer (sockfd); // terminate server and disconnect this client
    exit (0);
 }
 
