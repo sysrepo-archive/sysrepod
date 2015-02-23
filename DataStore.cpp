@@ -214,7 +214,7 @@ DataStore::updateNodes (xmlChar *xpath, xmlChar *newValue, char *log)
     }
 	objset = getNodeSet (xpath, log);
 	if (!objset){
-		// error or not result-empty set
+		// error or result is an empty set
 		if (strcmp(log, "No result") == 0){
 			retValue = 0;
 		}
@@ -223,7 +223,7 @@ DataStore::updateNodes (xmlChar *xpath, xmlChar *newValue, char *log)
 	    retValue = udpateSelectedNodes (objset->nodesetval, newValue);
 	}
 	if(unlockDS()){
-		sprintf (log, "Error in unlocking data store");
+		sprintf (log, "Error in unlocking data store, but %d values in data store modified. Inconsistant state reached.", retValue);
 		retValue = -1;
 	}
     return retValue;

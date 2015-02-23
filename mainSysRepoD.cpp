@@ -304,6 +304,7 @@ main (int argc, char **argv)
     }
     delete (clientSet);
     close (listenfd);
+    delete (DataStores); // called only at one palce here.
 	destroyMutexes ();
 	common::CloseLog();
 	xmlCleanupParser(); // To be called only once when exiting, no where else.

@@ -24,19 +24,31 @@ DataStoreSet::DataStoreSet() {
 DataStoreSet::~DataStoreSet()
 {
    int i;
+
+   pthread_mutex_destroy (&dsMutex);
    for (i=0; i < maxNumber; i++){
 	   delete dataStoreList[i];
    }
    delete dataStoreList;
 }
 
+// Do not use log system as it is not created yet.
 bool
 DataStoreSet::initialize(int number)
 {
 	int i;
 
+	if (pthread_mutex_init(&dsMutex, NULL) != 0)
+	{
+		// Data store mutex init failed.
+		printf ("Error: Failed to init Mutex for DataStore Set.\n");
+		return false;
+	}
 	dataStoreList = new DataStore *[number];
-	if (dataStoreList == NULL) return false;
+	if (dataStoreList == NULL) {
+		printf ("Error: Unable to allocate memory for data store set.\n");
+		return false;
+	}
 	maxNumber = number;
 	for (i = 0; i < maxNumber; i++){
 		dataStoreList[i] = NULL;
@@ -44,15 +56,22 @@ DataStoreSet::initialize(int number)
 	return true;
 }
 
+// Do not use log system as it may not be created yet.
 bool
 DataStoreSet:: addDataStore (char *name, char *inFile, char *xsdDir, char *xsltDir)
 {
-	if (count == maxNumber) {
-		printf ("Limit of %d data stores reached. Can not add more data stores.\n", maxNumber);
+	if(pthread_mutex_lock(&dsMutex)){
+		printf ("Unable to lock data store set.\n");
 		return false;
 	}
-	if(getDataStore(name)){
+	if (count == maxNumber) {
+		printf ("Limit of %d data stores reached. Can not add more data stores.\n", maxNumber);
+		pthread_mutex_unlock(&dsMutex);
+		return false;
+	}
+	if(getDataStore_noLock(name)){
 		printf ("Duplicate Data Store Names are not allowed: %s\n", name);
+		pthread_mutex_unlock(&dsMutex);
 		return false;
 	}
     dataStoreList[count] = new DataStore(name, inFile, xsdDir, xsltDir);
@@ -60,14 +79,36 @@ DataStoreSet:: addDataStore (char *name, char *inFile, char *xsdDir, char *xsltD
     	delete dataStoreList[count];
     	dataStoreList[count] = NULL;
     	printf ("Error in creating a new data store: %s\n", name);
+    	pthread_mutex_unlock(&dsMutex);
     	return false;
     }
     count++;
+    pthread_mutex_unlock(&dsMutex);
     return true;
 }
 
+// Do not use log system as it may not be created yet.
 DataStore *
 DataStoreSet::getDataStore (char *name)
+{
+	int i;
+
+	if(pthread_mutex_lock(&dsMutex)){
+		printf ("Unable to lock data store set.\n");
+		return NULL;
+	}
+	for (i=0; i < count; i++){
+		if (strcmp(name, dataStoreList[i]->name) == 0){
+			pthread_mutex_unlock(&dsMutex);
+			return dataStoreList[i];
+		}
+	}
+	pthread_mutex_unlock(&dsMutex);
+	return NULL;
+}
+
+DataStore *
+DataStoreSet::getDataStore_noLock (char *name)
 {
 	int i;
 	for (i=0; i < count; i++){

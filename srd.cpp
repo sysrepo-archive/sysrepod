@@ -240,7 +240,7 @@ srd_connect (char *serverIP, int serverPort, int *sockfd)
 }
 
 int
-srd_setDatastore (int sockfd, char *dsname)
+srd_setDataStore (int sockfd, char *dsname)
 {
    char *msg;
 
@@ -481,4 +481,57 @@ srd_isServerResponseOK(int sockfd, char **OKcontent)
     xmlXPathFreeObject (xpathObj);
     xmlFreeDoc(doc);
     return ret;
+}
+
+int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, char *xsltDir)
+{
+	char *msg;
+	int   msgSpace;
+	char *result;
+	int n = -1;
+	int intValue;
+
+	if (name == NULL || strlen (name) == 0 || value == NULL || strlen(value) == 0){
+		printf ("libsrd.a: Name and/or Value of data store can not be absent.");
+		return (0);
+	}
+
+	msgSpace = strlen(name) + strlen (value) + 100;
+	if (xsdDir)  msgSpace = msgSpace + strlen (xsdDir);
+	if (xsltDir) msgSpace = msgSpace + strlen (xsltDir);
+	msg = (char *)malloc (msgSpace);
+	if (!msg){
+		printf ("libsrd.a: Unable to allocate space.\n");
+		return 0;
+	}
+	sprintf (msg, "<xml><command>create_dataStore</command><param1>%s</param1><param2>%s</param2>", name, value);
+	if (xsdDir){
+		strcat (msg, "<param3>");
+		strcat (msg, xsdDir);
+		strcat (msg, "</param3>");
+	}
+	if (xsdDir){
+		strcat (msg, "<param4>");
+		strcat (msg, xsltDir);
+		strcat (msg, "</param4>");
+	}
+	strcat (msg, "</xml>");
+	if (!sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    free (msg);
+	    return 0;
+	}
+	if (!srd_isServerResponseOK (sockfd, &result)){
+		printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
+		free (msg);
+		return 0;
+	}
+	free (msg);
+	return 1;
+}
+
+int
+srd_listDataStores (int sockfd, char *name)
+{
+	return 1;
 }

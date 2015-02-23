@@ -17,9 +17,11 @@
 
 class DataStoreSet {
 private:
+	pthread_mutex_t dsMutex;
 	int count;
 	int maxNumber;
 	DataStore **dataStoreList;
+	DataStore *getDataStore_noLock (char *name);
 public:
 	DataStoreSet();
 	virtual ~DataStoreSet();
