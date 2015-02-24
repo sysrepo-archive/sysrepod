@@ -34,6 +34,7 @@ int main(int argc, char**argv)
    char xpath[100];
    char *value;
    char newValue[1000];
+   char *dsList = NULL;
 
    if (argc != 2)
       serverIP = defaultServerIP;
@@ -78,23 +79,30 @@ int main(int argc, char**argv)
    	   printf ("Result of XPATH not found.\n");
    }
 
-   // create a new data store and retrive its contents
+   // create a new data store and retrieve its contents
    strcpy (dataStoreName, "configure");
    strcpy (newValue, "<hosts><host><name>buzz</name><domain>tail-f.com</domain><defgw>192.168.1.1</defgw><interfaces><interface><name>eth0</name><ip>192.168.1.61</ip><mask>255.255.255.0</mask><enabled>true</enabled></interface><interface><name>eth1</name><ip>10.77.1.44</ip><mask>255.255.0.0</mask><enabled>false</enabled></interface></interfaces></host><host><name>jorba</name><domain>cisco.com</domain><defgw>192.168.111.111</defgw><interfaces><interface><name>atm0</name><ip>192.168.111.61</ip><mask>255.255.255.0</mask><enabled>true</enabled></interface></interfaces></host></hosts>");
    if (!srd_createDataStore (sockfd, dataStoreName, newValue, NULL, NULL)){
 	   printf ("Error in creating a new data store : %s\n", dataStoreName);
    } else {
 	   // print the contents of the new data store
-	   strcpy (xpath, "/");
+	   strcpy (xpath, "/*");
 	   srd_setDataStore (sockfd, dataStoreName);
 	   srd_applyXPath (sockfd, xpath, &value);
 	   if (value){
 		   printf ("The contents of the new data store are: %s\n", value);
 		   free (value);
 	   } else {
-		   printf ("Unable to get the contents of the new data store.\n");
+		   printf ("Unable to get the contents of the new data store: %s.\n", dataStoreName);
 	   }
    }
+   if (srd_listDataStores (sockfd, &dsList)){
+	   if (dsList) printf ("Data Store list is: %s\n", dsList);
+	   else        printf ("Data Store list is empty.\n");
+   } else {
+	   printf ("Error in getting list of data stores.\n");
+   }
+   if (dsList) free (dsList);
    srd_disconnect (sockfd); // disconnect this client, leave server running
    // srd_terminateServer (sockfd); // terminate server and disconnect this client
    exit (0);

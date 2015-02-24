@@ -37,10 +37,44 @@ DataStore::DataStore(char *dsname, char * filename, char *xsddir, char *xsltdir)
    }
 }
 
+DataStore::DataStore(char *dsname)
+{
+   doc = NULL;
+   fileName[0] = '\0';
+   if (dsname == NULL || strlen (dsname) > MAXDATASTORENAMELEN){
+	   name[0] = '\0';
+   } else {
+	   strcpy (name, dsname);
+   }
+}
+
 DataStore::~DataStore()
 {
    if (doc) xmlFreeDoc (doc);
    pthread_mutex_destroy (&dsMutex);
+}
+
+bool
+DataStore::initialize (char *xml)
+{
+	if (xml == NULL || name == NULL || strlen (xml) == 0 || strlen(name) == 0) return false;
+	doc = xmlReadMemory(xml, strlen(xml), "noname.xml", NULL, 0);
+	if (doc == NULL)
+	{
+	   printf("Error: could not parse xml %s to create DOM XML tree.\n", xml);
+	   return false;
+
+	}
+
+   if (pthread_mutex_init(&dsMutex, NULL) != 0)
+   {
+	   // Data store mutex init failed.
+	   xmlFreeDoc (doc);
+	   doc = NULL;
+	   printf ("Error: Failed to init Mutex for DataStore.\n");
+	   return false;
+   }
+   return true;
 }
 
 bool

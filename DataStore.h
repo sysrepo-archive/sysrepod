@@ -33,8 +33,10 @@ public:
 	char name[MAXDATASTORENAMELEN + 1];
 
 	DataStore(char *filename, char *dsname, char * xsddir, char *xsltdir);
+	DataStore (char *dsname);
 	virtual ~DataStore();
 	bool initialize (void);
+	bool initialize (char *xml);
 	int lockDS (void);
 	int unlockDS(void);
 	int applyXPath (xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset);

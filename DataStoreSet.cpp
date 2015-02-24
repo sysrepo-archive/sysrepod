@@ -56,9 +56,40 @@ DataStoreSet::initialize(int number)
 	return true;
 }
 
+// Can use log system
+bool
+DataStoreSet:: addDataStoreFromString (char *name, char *xml)
+{
+	if(pthread_mutex_lock(&dsMutex)){
+		printf ("Unable to lock data store set.\n");
+		return false;
+	}
+	if (count == maxNumber) {
+		printf ("Limit of %d data stores reached. Can not add more data stores.\n", maxNumber);
+		pthread_mutex_unlock(&dsMutex);
+		return false;
+	}
+	if(getDataStore_noLock(name)){
+		printf ("Duplicate Data Store Names are not allowed: %s\n", name);
+		pthread_mutex_unlock(&dsMutex);
+		return false;
+	}
+    dataStoreList[count] = new DataStore(name);
+    if (dataStoreList[count] == NULL || !dataStoreList[count]->initialize(xml)){
+    	delete dataStoreList[count];
+    	dataStoreList[count] = NULL;
+    	printf ("Error in creating a new data store: %s\n", name);
+    	pthread_mutex_unlock(&dsMutex);
+    	return false;
+    }
+    count++;
+    pthread_mutex_unlock(&dsMutex);
+    return true;
+}
+
 // Do not use log system as it may not be created yet.
 bool
-DataStoreSet:: addDataStore (char *name, char *inFile, char *xsdDir, char *xsltDir)
+DataStoreSet:: addDataStoreFromFile (char *name, char *inFile, char *xsdDir, char *xsltDir)
 {
 	if(pthread_mutex_lock(&dsMutex)){
 		printf ("Unable to lock data store set.\n");
@@ -117,5 +148,36 @@ DataStoreSet::getDataStore_noLock (char *name)
 		}
 	}
 	return NULL;
+}
+
+char *
+DataStoreSet::getList (void)
+{
+	int i;
+	char *list;
+	int requiredSize = 0;
+
+	if(pthread_mutex_lock(&dsMutex)){
+		printf ("Unable to lock data store set.\n");
+		return NULL;
+	}
+	if (count == 0){
+		pthread_mutex_unlock(&dsMutex);
+		return NULL;
+	}
+	for (i = 0; i < count; i++){
+		requiredSize = requiredSize + strlen (dataStoreList[i]->name) + strlen ("<dataStore></dataStore>");
+	}
+	requiredSize = requiredSize + strlen ("<dataStores></dataStores>") + 10;
+	list = (char *) malloc (requiredSize);
+	sprintf (list, "<dataStores>");
+	for (i=0; i < count; i++){
+		strcat (list, "<dataStore>");
+		strcat (list, dataStoreList[i]->name);
+		strcat (list, "</dataStore>");
+	}
+	strcat (list, "</dataStores>");
+	pthread_mutex_unlock(&dsMutex);
+	return list;
 }
 

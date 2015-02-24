@@ -94,7 +94,7 @@ addDataStore (char *value)
     	printf("Unable to add data store. Format: Name xmlFile XSDDir XSLTDir.\nLast two values optional.\n");
     	return;
     } else {
-    	if (!DataStores->addDataStore(name, xmlFile, xsdDir, xsltDir)){
+    	if (!DataStores->addDataStoreFromFile(name, xmlFile, xsdDir, xsltDir)){
     		printf ("Error in adding data store %s\n", name);
     	}
     }

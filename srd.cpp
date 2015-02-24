@@ -59,57 +59,41 @@ recvServer (int sockfd, char **buffPtr, int *buffSize)
 	int len = 0;
 	int waitCount = 0;
 	int msgSize = 0;
+	int numBytesRead = 0;
+	int n;
+	char *newBuffer;
 
-	len = read (sockfd, *buffPtr, MSGLENFIELDWIDTH + 1);
-	(*buffPtr)[MSGLENFIELDWIDTH + 1] = '\0';
-    msgSize = atoi (*buffPtr);
-    len = read (sockfd, *buffPtr, msgSize);
-    return msgSize;
-
-
-   // read message length first
-   ioctl (sockfd, FIONREAD, &len);
-   printf ("sock content len is %d, want it to be %d\n", len, MSGLENFIELDWIDTH+1);
-   while (len < MSGLENFIELDWIDTH + 1 ){
-		sleep (2);
-                ioctl (sockfd, FIONREAD, &len);
-                printf ("READ size: sock content len is %d, want it to be %d\n", len, MSGLENFIELDWIDTH+1);
-		waitCount++;
-		if (waitCount == 3) break;
-   }
-   if (len >= MSGLENFIELDWIDTH + 1){
-	  len = read (sockfd, *buffPtr, MSGLENFIELDWIDTH + 1);
-	  if (len != MSGLENFIELDWIDTH + 1){ // error
-		  return 0;
-	  }
-	  (*buffPtr)[MSGLENFIELDWIDTH + 1] = '\0';
-	  msgSize = atoi (*buffPtr);
-	  if (msgSize < 1) return 0; // error
-	  if (msgSize > *buffSize){
-		  // given buffer is too small. Allocate a bigger one.
-		  *buffPtr = (char *)malloc (msgSize + 1);
-		  if (*buffPtr == NULL) return 0; // error
-		  *buffSize = msgSize + 1;
-	  }
-	  ioctl (sockfd, FIONREAD, &len);
-	  waitCount = 0;
-	  while (len < msgSize){
-	  	 sleep (2);
-                 ioctl (sockfd, FIONREAD, &len);
-                 printf ("READ content: sock content len is %d, want it to be %d\n", len, msgSize);
-	  	 waitCount++;
-	  	 if (waitCount == 3) break;
-	  }
-	  if (len >= msgSize){
-		  len = read (sockfd, *buffPtr, msgSize);
-		  if (len < msgSize) return 0; // error
-	  } else {
-		  return 0; // error
-	  }
-   } else {
-		return 0;
-   }
-   return msgSize;
+	// First few chars in all messages reserved for message size followed by one white space.
+	while (msgSize == 0 && numBytesRead < MSGLENFIELDWIDTH + 1){
+	    n= recv(sockfd, &((*buffPtr)[numBytesRead]), *buffSize - numBytesRead, 0);
+	    if (n < 1) return 0; // client is bad
+	    numBytesRead = numBytesRead + n;
+	    if (numBytesRead < MSGLENFIELDWIDTH + 1) continue; // need more bytes to proceed
+	    // read message size
+	    n = sscanf(*buffPtr, "%d", &msgSize);
+	    if (n != 1){ // msg len not found
+	        printf ("libsrd.a: Unable to find message length of the response from server.\n");
+	        return 0;
+	    }
+	    if (MSGLENFIELDWIDTH + 1 + msgSize + 1 > *buffSize){ // input buffer is too small
+	    	newBuffer = (char *) realloc (*buffPtr, MSGLENFIELDWIDTH + 1 + msgSize + 1);
+	    	if (newBuffer == NULL){
+	    		printf ("libsrd.a: Unable to allocate space.\n");
+	    		return 0; // client should fail
+	    	}
+	    	*buffPtr = newBuffer;
+	        *buffSize = MSGLENFIELDWIDTH + 1 + msgSize + 1;
+	    }
+	}
+	while ((MSGLENFIELDWIDTH + 1 + msgSize) > numBytesRead){
+	    // need to read more bytes
+	    n = recv(sockfd, &((*buffPtr)[numBytesRead]), *buffSize - numBytesRead, 0);
+	    if (n < 1) return 0; // client is bad
+	    numBytesRead = numBytesRead + n;
+	}
+	// complete message read
+	(*buffPtr)[numBytesRead] = '\0';
+	return msgSize;
 }
 
 xmlXPathObjectPtr
@@ -391,26 +375,32 @@ int
 srd_isServerResponseOK(int sockfd, char **OKcontent)
 {
 	int ret;
-	char buff[500];
 	char log[100];
-	char *buffPtr = buff;
-	int buffSize = sizeof(buff) - 1;
+	char *buffPtr = NULL;
+	int buffSize = 100;
 	xmlDocPtr doc;
 	xmlXPathObjectPtr  xpathObj;
 	xmlChar xpathExpr[100];
 	xmlNodeSetPtr nodes;
 
 	if (OKcontent != NULL) *OKcontent = NULL;
-	ret = recvServer (sockfd, &buffPtr, &buffSize);
-	if (!ret){
-		printf ("libaapi.a: Call to read response from server returned 0 - failure\n");
-		if(buffPtr != buff) free (buffPtr);
+	buffPtr = (char *) malloc (buffSize);
+	if (!buffPtr){
+		printf ("libsrd.a: Unable to allocate space.\n");
 		return 0;
 	}
-	buffPtr[ret] = '\0';// make contents a string, not necessary
+	ret = recvServer (sockfd, &buffPtr, &buffSize);
+	if (!ret){
+		printf ("libsrd.a: Call to read response from server returned 0 - failure\n");
+		if(buffPtr) free (buffPtr);
+		return 0;
+	}
     printf("libsrd.a: Response from server is:\n %s\n", buffPtr);
-	doc = xmlReadMemory(buffPtr, ret, "noname.xml", NULL, 0);
-	if (buffPtr != buff) free (buffPtr);
+	doc = xmlReadMemory(&(buffPtr[MSGLENFIELDWIDTH + 1]), ret, "noname.xml", NULL, 0);
+	if (buffPtr){
+		free (buffPtr);
+		buffPtr = NULL;
+	}
 	if (doc == NULL){
             printf("libsrd.a: Error in forming xml-doc out of server response : doc is NULL\n");
 	    return 0;
@@ -452,7 +442,8 @@ srd_isServerResponseOK(int sockfd, char **OKcontent)
     					    printf ("libsrd.a: Unable to read content of <ok> node in server response.\n");
     					    ret = 0;
     					} else {
-    					    *OKcontent = contentBuff; // caller needs to free this space
+    					    // caller needs to free this space
+    						*OKcontent = contentBuff;
     					    ret = 1;
     					}
     				} else {
@@ -487,9 +478,6 @@ int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, cha
 {
 	char *msg;
 	int   msgSpace;
-	char *result;
-	int n = -1;
-	int intValue;
 
 	if (name == NULL || strlen (name) == 0 || value == NULL || strlen(value) == 0){
 		printf ("libsrd.a: Name and/or Value of data store can not be absent.");
@@ -521,7 +509,7 @@ int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, cha
 	    free (msg);
 	    return 0;
 	}
-	if (!srd_isServerResponseOK (sockfd, &result)){
+	if (!srd_isServerResponseOK (sockfd, NULL)){
 		printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
 		free (msg);
 		return 0;
@@ -530,8 +518,19 @@ int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, cha
 	return 1;
 }
 
-int
-srd_listDataStores (int sockfd, char *name)
+bool
+srd_listDataStores (int sockfd, char **result)
 {
-	return 1;
+	char msg[100];
+
+	sprintf (msg, "<xml><command>list_dataStores</command></xml>");
+	if (!sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    return false;
+	}
+	if (!srd_isServerResponseOK (sockfd, result)){
+		printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
+		return false;
+	}
+	return true;
 }
