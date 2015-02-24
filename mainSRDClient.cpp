@@ -103,6 +103,26 @@ int main(int argc, char**argv)
 	   printf ("Error in getting list of data stores.\n");
    }
    if (dsList) free (dsList);
+   dsList = NULL;
+
+   n = srd_deleteDataStore (sockfd, dataStoreName);
+   if (n > 0){
+	   printf ("Data Store %s deleted.\n", dataStoreName);
+   } else if (n == 0){
+	   printf ("Data Store %s not found\n", dataStoreName);
+   } else {
+	   printf ("Error in deleting the Data Store %s\n", dataStoreName);
+   }
+
+   // Print the list of data stores again
+   if (srd_listDataStores (sockfd, &dsList)){
+   	   if (dsList) printf ("Data Store list is: %s\n", dsList);
+   	   else        printf ("Data Store list is empty.\n");
+   } else {
+   	   printf ("Error in getting list of data stores.\n");
+   }
+   if (dsList) free (dsList);
+
    srd_disconnect (sockfd); // disconnect this client, leave server running
    // srd_terminateServer (sockfd); // terminate server and disconnect this client
    exit (0);

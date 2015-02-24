@@ -181,3 +181,38 @@ DataStoreSet::getList (void)
 	return list;
 }
 
+int
+DataStoreSet::deleteDataStore (char *name)
+{
+	int i;
+	int retValue = 0;
+	DataStore *ds;
+
+	if(pthread_mutex_lock(&dsMutex)){
+		printf ("Unable to lock data store set.\n");
+		return -1;
+	}
+	for (i=0; i < count; i++){
+		if (strcmp(name, dataStoreList[i]->name) == 0){
+			if (dataStoreList[i]->lockDS()){
+				retValue = -1;
+				break;
+			}
+			// remove from the list
+			ds = dataStoreList[i];
+			dataStoreList[i] = NULL;
+			// shift array up
+			if (i < count -1){
+			   memmove (&(dataStoreList[i]), &(dataStoreList[i+1]), sizeof (DataStore *)* (count - i - 1));
+			}
+            count --;
+            ds->unlockDS();
+            delete (ds);
+            retValue = 1;
+            break;
+		}
+	}
+	pthread_mutex_unlock(&dsMutex);
+	return retValue;
+}
+

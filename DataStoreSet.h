@@ -31,6 +31,7 @@ public:
 	bool addDataStoreFromString (char *name, char *xml);
 	DataStore *getDataStore (char *name);
 	char *getList (void);
+	int  deleteDataStore (char *name);
 };
 
 #endif /* DATASTORESET_H_ */

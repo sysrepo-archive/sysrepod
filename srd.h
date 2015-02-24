@@ -22,5 +22,6 @@ int  srd_unlockDataStore (int sockfd);        // unlock data store, returns 1 on
 int  srd_updateNodes (int sockfd, char *xpath, char *value); // update the value of xml nodes specified by XPATH. Returns number of nodes modified. -1 means error.
 int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, char *xsltDir); // It adds a new data store. Returns 1 on success, 0 on failure.
 bool srd_listDataStores (int sockfd, char **result); // Retrieves the list of active data stores. On failure return false.
+int  srd_deleteDataStore (int sockfd, char *name); //Deletes a data store. On success returns 0 or +ve number, on error -1.
 
 #endif /* SRD_H_ */

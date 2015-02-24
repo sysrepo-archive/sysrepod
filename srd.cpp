@@ -229,7 +229,7 @@ srd_setDataStore (int sockfd, char *dsname)
    char *msg;
 
    msg = (char *)malloc (strlen(dsname) + 100);
-   sprintf (msg, "<xml><command>set_datastore</command><param1>%s</param1></xml>", dsname);
+   sprintf (msg, "<xml><command>set_dataStore</command><param1>%s</param1></xml>", dsname);
    if (!sendServer (sockfd, msg, strlen(msg))){
       printf ("libsrd.a: Error in sending msg: %s\n", msg);
       free (msg);
@@ -533,4 +533,44 @@ srd_listDataStores (int sockfd, char **result)
 		return false;
 	}
 	return true;
+}
+
+int
+srd_deleteDataStore (int sockfd, char *name)
+{
+	char *msg;
+	char *result;
+	int n = -1;
+	int intValue;
+	bool retValue;
+
+	msg = (char *)malloc (strlen(name) + 100);
+	if (!msg){
+		printf ("libsrd.a: Unable to allocate space.\n");
+		return -1;
+	}
+	sprintf (msg, "<xml><command>delete_dataStore</command><param1>%s</param1></xml>", name);
+	if (!sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    free (msg);
+	    return -1;
+	}
+	if (!srd_isServerResponseOK (sockfd, &result)){
+		printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
+		free (msg);
+		return -1;
+	}
+	if (result) {
+		   n = sscanf (result, "%d", &intValue);
+		   if (n == 0) {
+			   n = -1; // error condition.
+		   } else {
+			   n = intValue;
+		   }
+		   free (result);
+	} else {
+        printf ("libsrd.a: Unable to read how many data stores deleted. Unpredictable modificatons done in data store.\n");
+	}
+	free (msg);
+	return n;
 }

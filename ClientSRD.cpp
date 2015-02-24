@@ -48,7 +48,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			xmlFreeDoc (doc);
 			return 0;
 	}
-	if (strcmp((char *)command, "set_datastore") == 0){
+	if (strcmp((char *)command, "set_dataStore") == 0){
 		    strcpy ((char *) xpath, "/xml/param1");
             param1 = ClientSet::GetFirstNodeValue(doc, xpath);
             if(param1 == NULL){
@@ -186,6 +186,21 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
         common::SendMessage(cinfo->sock, msg);
         free (msg);
         if (list) free (list);
+	} else if (strcmp((char *)command, "delete_dataStore") == 0){
+		int n;
+	    strcpy ((char *) xpath, "/xml/param1");
+        param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+        if(param1 == NULL){
+           sprintf (outBuffer, "<xml><error>Parameter - data store not found</error></xml>");
+        } else {
+           if ((n = DataStores->deleteDataStore ((char *)param1)) >=0){
+              sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+           } else {
+        	   sprintf (outBuffer, "<xml><error>Error in deleting Data Store %s</error></xml>", param1);
+           }
+        }
+        common::SendMessage(cinfo->sock, outBuffer);
+        xmlFree (param1);
 	}else if (strcmp ((char *)command, "terminate") == 0){ // terminate this server
 		retValue = -1;
 		sprintf (outBuffer, "<xml><ok/></xml>");
