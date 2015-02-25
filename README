@@ -17,3 +17,10 @@
 8) DataStore.cpp implements the Data Store class. One can have many Data Stores.
 9) libsrd.a is the library that any client talking SRD protocol will link with.
    To understand the API Calls available in libsrd.a, look at the file srd.h.
+10) HOW TO WRITE A CLIENT: Look at the sample client  mainSRDClient.cpp. The 
+    API calls are listed in srd.h. To compile your client use the following
+    in Makefile:
+
+      client: mainSRDClient.o srd.o libsrd.a
+	$(GCC) -g -o client mainSRDClient.o libsrd.a -lxml2
+
