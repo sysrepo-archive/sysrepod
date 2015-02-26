@@ -170,6 +170,29 @@ DataStore::printElementSet (xmlNodeSet *nodeSet, char **printBuffPtr, int printB
            n = sprintf (*printBuffPtr+offset, "%s", buff->content);
            offset = offset + n;
            xmlBufferFree (buff);
+        } else if (cur_node->type == XML_TEXT_NODE){
+        	xmlChar *curr_value;
+        	curr_value = xmlNodeGetContent (cur_node);
+        	if (curr_value && strlen ((char *)curr_value) > 0){
+        		if (size < (offset + strlen((char *)curr_value) + lastOffset + 1 + 2)){ // need 2 byte space for '; ' the value separator
+        		   size = offset + strlen((char *)curr_value) + lastOffset + 1 + 2;
+        		   newSpace = (char *)realloc (*printBuffPtr, size);
+        		   if (newSpace){
+        		       *printBuffPtr = newSpace;
+        		   } else {
+        		       // unable to allocate space
+        		       xmlFree (curr_value);
+        		       return -1;
+        		   }
+        		}
+        		if (i==0){ // first time no need to precede by value separator
+        		   n = sprintf (*printBuffPtr+offset, "%s", curr_value);
+        		} else {
+        		   n = sprintf (*printBuffPtr+offset, "; %s", curr_value);
+        		}
+        		offset = offset + n;
+        		xmlFree (curr_value);
+        	}
         }
     }
     return (offset-initialOffset);

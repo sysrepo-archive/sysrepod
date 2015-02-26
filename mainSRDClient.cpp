@@ -51,13 +51,45 @@ int main(int argc, char**argv)
 	   srd_disconnect (sockfd);
 	   exit (1);
    }
+   // Example of a simple XPATH
    strcpy (xpath, "/hosts/host/interfaces/interface/name");
+   printf ("About to send xpath to server : %s\n", xpath);
    srd_applyXPath (sockfd, xpath, &value);
    if (value){
 	   printf ("Result of XPATH is: %s\n", value);
 	   free (value);
    } else {
 	   printf ("Result of XPATH not found.\n");
+   }
+   // Example of getting the name node of the first interface
+   strcpy (xpath, "/hosts/host/interfaces/interface[1]/name");
+   printf ("About to send xpath to server : %s\n", xpath);
+   srd_applyXPath (sockfd, xpath, &value);
+   if (value){
+        printf ("Result of XPATH is: %s\n", value);
+        free (value);
+   } else {
+        printf ("Result of XPATH not found.\n");
+   }
+   // Example of extracting the atomic value of a single node
+   strcpy (xpath, "/hosts/host/interfaces/interface[1]/name/text()");
+   printf ("About to send xpath to server : %s\n", xpath);
+   srd_applyXPath (sockfd, xpath, &value);
+   if (value){
+        printf ("Result of XPATH is: %s\n", value);
+        free (value);
+   } else {
+        printf ("Result of XPATH not found.\n");
+   }
+   // Example of extracting multiple atomic values, values will be separated by '; '
+   strcpy (xpath, "/hosts/host/interfaces/interface/name/text()");
+   printf ("About to send xpath to server : %s\n", xpath);
+   srd_applyXPath (sockfd, xpath, &value);
+   if (value){
+        printf ("Result of XPATH is: %s\n", value);
+        free (value);
+   } else {
+        printf ("Result of XPATH not found.\n");
    }
 
    // change the name of the first interface to 'new_eth0'
@@ -70,7 +102,7 @@ int main(int argc, char**argv)
 	   printf ("Successfully updated value of '%s' \n     with a new value = '%s'\nNumber of nodes modified = %d\n", xpath, newValue, n);
    }
    // Print content again
-   strcpy (xpath, "/hosts/host/interfaces/interface/name");
+   strcpy (xpath, "/hosts/host/interfaces/interface[1]/name");
    srd_applyXPath (sockfd, xpath, &value);
    if (value){
    	   printf ("Result of XPATH is: %s\n", value);
@@ -78,6 +110,8 @@ int main(int argc, char**argv)
    } else {
    	   printf ("Result of XPATH not found.\n");
    }
+   srd_disconnect (sockfd);
+   exit (0);
 
    // create a new data store and retrieve its contents
    strcpy (dataStoreName, "configure");

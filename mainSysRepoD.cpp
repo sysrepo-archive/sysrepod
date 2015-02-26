@@ -120,8 +120,8 @@ applySettings(int argc, char **argv)
 
 	// Read parameter file present as second word on command line
 	if ((paramFile = fopen (argv[1], "r")) == NULL){
-			fprintf (stderr, "Warning: Could not read the parameter file : %s, using default values.\n", argv[1]);
-			return;
+			fprintf (stderr, "FATAL ERROR: Could not read the parameter file : %s.\n", argv[1]);
+			exit (1);
 	}
 	while (true){
 		if((ret = fgets(line, PATHLEN*4+1, paramFile)) == NULL) break;
