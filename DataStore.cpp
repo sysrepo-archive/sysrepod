@@ -106,7 +106,10 @@ DataStore:: getNodeSet (xmlChar *xpath, char *log)
 	xmlXPathContextPtr context;
 	xmlXPathObjectPtr result;
 
-	if(!doc) return NULL;
+	if(!doc) {
+		sprintf (log, "Doc is NULL, why?");
+		return NULL;
+	}
 	context = xmlXPathNewContext(doc);
 	if (context == NULL) {
 		sprintf(log, "Error in xmlXPathNewContext");
@@ -116,12 +119,6 @@ DataStore:: getNodeSet (xmlChar *xpath, char *log)
 	xmlXPathFreeContext(context);
 	if (result == NULL) {
 		sprintf(log, "Error in xmlXPathEvalExpression");
-		return NULL;
-	}
-	if(xmlXPathNodeSetIsEmpty(result->nodesetval)){
-		xmlXPathFreeObject(result);
-        sprintf(log, "No result");
-		return NULL;
 	}
 	return result;
 }
@@ -151,6 +148,8 @@ DataStore::printElementSet (xmlNodeSet *nodeSet, char **printBuffPtr, int printB
     int size = printBuffSize;
     char *newSpace;
 
+    if (nodeSet == NULL) return 0;
+    if(xmlXPathNodeSetIsEmpty(nodeSet)) return 0;
     for (i=0; i < nodeSet->nodeNr; i++) {
     	cur_node = nodeSet->nodeTab[i];
         if (cur_node->type == XML_ELEMENT_NODE) {
@@ -200,6 +199,49 @@ DataStore::printElementSet (xmlNodeSet *nodeSet, char **printBuffPtr, int printB
 }
 
 int
+DataStore::printXPathAtomicResult (xmlXPathObjectPtr objset, char **printBuffPtr, int printBuffSize, int initialOffset)
+{
+	int retValue;
+	char *res = NULL;
+	int lastOffset = initialOffset + 2; // length of </ok></xml>
+	int size = printBuffSize;
+	char *newSpace;
+	int offset = initialOffset;
+	int n;
+
+	if (objset == NULL) return -1;
+	switch (objset->type){
+	case XPATH_STRING:
+        res = strdup ((char *)objset->stringval);
+        break;
+    case XPATH_BOOLEAN:
+        res = (char *)xmlXPathCastBooleanToString(objset->boolval);
+        break;
+    case XPATH_NUMBER:
+        res = (char *) xmlXPathCastNumberToString(objset->floatval);
+        break;
+	}
+	if (res == NULL || strlen (res) == 0){
+		if (res) free (res);
+		return 0;
+	}
+	if (size < (offset + strlen(res) + lastOffset + 1)){
+	    size = offset + strlen(res) + lastOffset + 1;
+	    newSpace = (char *)realloc (*printBuffPtr, size);
+	    if (newSpace){
+	        *printBuffPtr = newSpace;
+	    } else {
+	        // unable to allocate space
+	        if (res) free (res);
+	        return -1;
+	    }
+	}
+	n = sprintf (*printBuffPtr+offset, "%s", res);
+	if (res) free (res);
+	return n;
+}
+
+int
 DataStore::applyXPath(xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset)
 {
 	xmlXPathObjectPtr objset;
@@ -213,12 +255,18 @@ DataStore::applyXPath(xmlChar *xpath, char **printBuffPtr, int printBuffSize, in
 	}
 	objset =  getNodeSet (xpath, log);
 	if (!objset){
-	   // error or no result-empty set
-	   if (strcmp (log, "No result") != 0){
-		   retValue = 0;
-           strcpy (*printBuffPtr, log);
-	   }
-	} else {
+	   // error
+		retValue = 0;
+        strcpy (*printBuffPtr, log);
+	} else if(objset->type == XPATH_STRING || objset->type == XPATH_NUMBER || objset->type == XPATH_BOOLEAN){
+		// put the text form of XPATH result in *printBuffPtr
+		n = printXPathAtomicResult (objset, printBuffPtr, printBuffSize, offset);
+		if (n < 0){
+			// error
+			sprintf (*printBuffPtr, "<xml><error>Unable to print XPath result</error></xml>");
+			retValue = 0;
+		}
+	} else if (objset->type == XPATH_NODESET || objset->type == XPATH_XSLT_TREE){
 		// put serialized object set in *printBuffPtr
 	    n = printElementSet (objset->nodesetval, printBuffPtr, printBuffSize, offset);
 	    if (n < 0){
@@ -226,6 +274,9 @@ DataStore::applyXPath(xmlChar *xpath, char **printBuffPtr, int printBuffSize, in
    		   sprintf (*printBuffPtr, "<xml><error>Unable to print contents</error></xml>");
    		   retValue = 0;
 	    }
+    } else if (objset->type == XPATH_UNDEFINED){
+    	strcpy (*printBuffPtr, "XPATH STRING: undefined");
+    	retValue = 0;
     }
 	xmlXPathFreeObject (objset);
 	if(unlockDS()){

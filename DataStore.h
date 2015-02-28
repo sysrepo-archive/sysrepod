@@ -42,6 +42,7 @@ public:
 	int applyXPath (xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset);
 	int printElementSet (xmlNodeSet *nodeSet, char **printBuffPtr, int printBuffSize, int initialOffset);
 	int updateNodes (xmlChar *xpath, xmlChar *newValue, char *log);
+	int printXPathAtomicResult (xmlXPathObjectPtr objset, char **printBuffPtr, int printBuffSize, int offset);
 };
 
 #endif /* DATASTORE_H_ */

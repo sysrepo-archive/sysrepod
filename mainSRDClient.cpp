@@ -92,6 +92,29 @@ int main(int argc, char**argv)
         printf ("Result of XPATH not found.\n");
    }
 
+   // Find the count of 'interface' nodes and print their names
+    strcpy (xpath, "count(/hosts/host/interfaces/interface)");
+    printf ("About to send xpath to server : %s\n", xpath);
+    srd_applyXPath (sockfd, xpath, &value);
+    if (value){
+ 	   int num, i;
+        printf ("The count of interface nodes is: %s\n", value);
+        num = atoi (value);
+        free (value);
+        for (i=1; i <= num; i++){
+     	   sprintf (xpath, "/hosts/host/interfaces/interface[%d]/name/text()", i);
+     	   srd_applyXPath (sockfd, xpath, &value);
+     	   if (value){
+     	      printf ("Name of interface at position %d is: %s\n", i, value);
+     	      free (value);
+     	   } else {
+     	      printf ("Name of interface not found.\n");
+     	   }
+        }
+    } else {
+       	   printf ("Result of XPATH not found.\n");
+    }
+
    // change the name of the first interface to 'new_eth0'
    strcpy (xpath, "/hosts/host/interfaces/interface[1]/name");
    strcpy (newValue, "new_eth0");
@@ -110,8 +133,6 @@ int main(int argc, char**argv)
    } else {
    	   printf ("Result of XPATH not found.\n");
    }
-   srd_disconnect (sockfd);
-   exit (0);
 
    // create a new data store and retrieve its contents
    strcpy (dataStoreName, "configure");
