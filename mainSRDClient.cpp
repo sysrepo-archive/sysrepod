@@ -51,6 +51,7 @@ int main(int argc, char**argv)
 	   srd_disconnect (sockfd);
 	   exit (1);
    }
+
    // Example of a simple XPATH
    strcpy (xpath, "/hosts/host/interfaces/interface/name");
    printf ("About to send xpath to server : %s\n", xpath);

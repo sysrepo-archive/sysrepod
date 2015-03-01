@@ -76,6 +76,8 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			printBuff = (char *)malloc (printBuffSize);
 			if (!printBuff){
 				sprintf (outBuffer, "<xml><error>Unable to allocate buffer space</error></xml>");
+			} else if (cinfo->dataStore == NULL){
+				sprintf (printBuff, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
 			} else {
 				offset1 = sprintf(printBuff, "<xml><ok>");
 				if (!cinfo->dataStore->applyXPath (param1, &printBuff, printBuffSize, offset1)){
@@ -95,21 +97,23 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		   free (printBuff);
 		}
 	} else if (strcmp ((char *)command, "lock_dataStore") == 0){
-        if(!cinfo->dataStore->lockDS()){
+		if (cinfo->dataStore == NULL){
+			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+		} else if(!cinfo->dataStore->lockDS()){
         	sprintf (outBuffer, "<xml><ok/></xml>");
-        	common::SendMessage(cinfo->sock, outBuffer);
         } else {
         	sprintf (outBuffer, "<xml><error>Unable to lock data store %s</error></xml>", cinfo->dataStore->name);
-        	common::SendMessage(cinfo->sock, outBuffer);
         }
+		common::SendMessage(cinfo->sock, outBuffer);
 	} else if (strcmp ((char *)command, "unlock_dataStore") == 0){
-		if(!cinfo->dataStore->unlockDS()){
+		if (cinfo->dataStore == NULL){
+			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+		}else if(!cinfo->dataStore->unlockDS()){
 		    sprintf (outBuffer, "<xml><ok/></xml>");
-		    common::SendMessage(cinfo->sock, outBuffer);
 		} else {
 		    sprintf (outBuffer, "<xml><error>Unable to unlock data store %s</error></xml>", cinfo->dataStore->name);
-		    common::SendMessage(cinfo->sock, outBuffer);
 		}
+		common::SendMessage(cinfo->sock, outBuffer);
 	} else if (strcmp ((char *)command, "update_nodes") == 0){
 		// param1 contains xpath, param2 contains new value
 		strcpy ((char *) xpath, "/xml/param1");
@@ -124,6 +128,10 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			if(param2 == NULL){
 			    sprintf (outBuffer, "<xml><error>New value not found</error></xml>");
 			    common::SendMessage(cinfo->sock, outBuffer);
+			} else if (cinfo->dataStore == NULL){
+				sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+				common::SendMessage(cinfo->sock, outBuffer);
+				xmlFree (param2);
 			} else {
 				int numNodesModified;
                 numNodesModified = cinfo->dataStore->updateNodes (param1, param2, log);
