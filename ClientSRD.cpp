@@ -201,7 +201,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
         if(param1 == NULL){
            sprintf (outBuffer, "<xml><error>Parameter - data store not found</error></xml>");
         } else {
-           if ((n = DataStores->deleteDataStore ((char *)param1)) >=0){
+           if ((n = DataStores->deleteDataStore (cinfo->clientSet, (char *)param1)) >=0){
               sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
            } else {
         	   sprintf (outBuffer, "<xml><error>Error in deleting Data Store %s</error></xml>", param1);

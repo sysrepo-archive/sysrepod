@@ -16,6 +16,7 @@
 
 class ClientSet {
 private:
+	pthread_mutex_t csMutex;
     clientInfo *clients;
     int maxClients;
     int numClients;
@@ -31,6 +32,8 @@ public:
 	void terminateClient (int index);
 	int  processFirstMessage (struct clientInfo *cinfo, char *command, char *outBuffer, int outBufferSize);
 	void forceTermination (void);
+	bool isDataStoreInUse (DataStore *ds);
+	void deleteClient (int index);
 	static void *thrdMain (void *arg); // main routine for every client thread
 	static int ProcessMessage (
 			clientInfo *cinfo,

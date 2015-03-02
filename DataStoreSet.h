@@ -14,6 +14,7 @@
 #define PATHLEN 1024
 
 #include "DataStore.h"
+#include "ClientSet.h"
 
 class DataStoreSet {
 private:
@@ -31,7 +32,7 @@ public:
 	bool addDataStoreFromString (char *name, char *xml);
 	DataStore *getDataStore (char *name);
 	char *getList (void);
-	int  deleteDataStore (char *name);
+	int  deleteDataStore (ClientSet *cset, char *name);
 };
 
 #endif /* DATASTORESET_H_ */

@@ -161,6 +161,7 @@ int main(int argc, char**argv)
    if (dsList) free (dsList);
    dsList = NULL;
 
+   // The following command should fail as Data Store is in use.
    n = srd_deleteDataStore (sockfd, dataStoreName);
    if (n > 0){
 	   printf ("Data Store %s deleted.\n", dataStoreName);
@@ -169,6 +170,11 @@ int main(int argc, char**argv)
    } else {
 	   printf ("Error in deleting the Data Store %s\n", dataStoreName);
    }
+   // Try to delete 'configure' data store again after setting a different data store for this client.
+   strcpy (dataStoreName, "runtime");
+   srd_setDataStore (sockfd, dataStoreName);
+   strcpy (dataStoreName, "configure");
+   srd_deleteDataStore (sockfd, dataStoreName);
 
    // Print the list of data stores again
    if (srd_listDataStores (sockfd, &dsList)){

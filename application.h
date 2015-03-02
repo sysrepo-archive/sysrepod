@@ -33,6 +33,7 @@ typedef struct clientInfo{
     DataStore *dataStore;
     Client *client;
     ClientSet *clientSet;
+    int index;
 } clientInfo;
 
 #ifdef MAIN_C_

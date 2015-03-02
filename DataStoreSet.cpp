@@ -182,7 +182,7 @@ DataStoreSet::getList (void)
 }
 
 int
-DataStoreSet::deleteDataStore (char *name)
+DataStoreSet::deleteDataStore (ClientSet *cset, char *name)
 {
 	int i;
 	int retValue = 0;
@@ -194,6 +194,14 @@ DataStoreSet::deleteDataStore (char *name)
 	}
 	for (i=0; i < count; i++){
 		if (strcmp(name, dataStoreList[i]->name) == 0){
+			// Clients get a handle to a data store by locking DataStoreSet first.
+			// DataStoreSet is locked above, so no additional client can get a handle on this data store.
+			// Now we can check if any client is using this data store. If in use, we can not delete this data store.
+			if (cset->isDataStoreInUse (dataStoreList[i])){
+				printf ("Data Store %s is in use, can not be deleteted.\n", name);
+				retValue = -1;
+				break;
+			}
 			if (dataStoreList[i]->lockDS()){
 				retValue = -1;
 				break;

@@ -35,6 +35,7 @@ ClientSet::ClientSet()
 ClientSet::~ClientSet()
 {
 	free (clients);
+	pthread_mutex_destroy (&csMutex);
 }
 
 bool
@@ -43,6 +44,12 @@ ClientSet::initialize (int maximumClients)
 	int i;
 
 	maxClients = maximumClients;
+	if (pthread_mutex_init(&csMutex, NULL) != 0)
+	{
+		// mutex init failed.
+		printf ("Error: Failed to init Mutex for ClientSet.\n");
+		return true;
+	}
 	clients = (clientInfo *) calloc (maxClients, sizeof (clientInfo));
 	if (clients == NULL){
 		return true;
@@ -54,6 +61,7 @@ ClientSet::initialize (int maximumClients)
 	    clients[i].protocol = INVALID_PROTOCOL;
 	    clients[i].clientSet = this;
 	    clients[i].dataStore = NULL;
+	    clients[i].index = i;
 	}
 	return false;
 }
@@ -64,6 +72,7 @@ ClientSet::newClient (int sock)
 	int i;
 	int slotIndex = -1;
 
+	if (pthread_mutex_lock(&csMutex)) return -1;
 	if (maxClients == numClients) return -1; // no space left
 	// find a free slot
 	for (i=0; i < maxClients; i++){
@@ -75,10 +84,28 @@ ClientSet::newClient (int sock)
 	if (slotIndex == -1){
 		sprintf (LogLine, "Logical error\n");
 		common::LogMsg (1, LogLine, false);
+		pthread_mutex_unlock(&csMutex);
 		return -1;
 	}
 	clients[slotIndex].sock = sock;
+	clients[slotIndex].slotFree = false;
+	numClients++;
+	pthread_mutex_unlock(&csMutex);
 	return slotIndex;
+}
+
+void
+ClientSet::deleteClient (int index)
+{
+	pthread_mutex_lock(&csMutex);
+	clients[index].state = CLNT_ENDED;
+    clients[index].slotFree = true;
+	clients[index].dataStore = NULL;
+    clients[index].protocol = INVALID_PROTOCOL;
+	delete (clients[index].client);
+	clients[index].client = NULL;
+	numClients --;
+	pthread_mutex_unlock(&csMutex);
 }
 
 void
@@ -103,7 +130,6 @@ ClientSet::startClient (int index)
 
 	 clients[index].state = CLNT_ACTIVE;
 	 clients[index].protocol = INVALID_PROTOCOL;
-	 clients[index].slotFree = false;
 	 clients[index].client = NULL;
 	 clients[index].dataStore = NULL;
 
@@ -336,12 +362,7 @@ ClientSet::thrdMain (void *arg)
 	}
 	free (recvline);
 	free (sendline);
-	cinfo->state = CLNT_ENDED;
-	cinfo->slotFree = true;
-	cinfo->dataStore = NULL;
-	cinfo->protocol = INVALID_PROTOCOL;
-	delete (cinfo->client);
-	cinfo->client = NULL;
+	cinfo->clientSet->deleteClient(cinfo->index);
 	pthread_exit (NULL);
 	return NULL;
 }
@@ -369,5 +390,21 @@ ClientSet::GetFirstNodeValue (xmlDocPtr doc, xmlChar *xpath)
 		retValue = NULL;
 	}
 	xmlXPathFreeObject (result);
+	return retValue;
+}
+
+bool
+ClientSet::isDataStoreInUse (DataStore *ds)
+{
+	int i;
+	bool retValue = false;
+	pthread_mutex_lock(&csMutex);
+	if (clients == NULL || numClients == 0) return false;
+	for (i = 0; i < numClients; i++){
+		if (clients[i].dataStore == ds){
+			retValue = true;
+		}
+	}
+	pthread_mutex_unlock(&csMutex);
 	return retValue;
 }
