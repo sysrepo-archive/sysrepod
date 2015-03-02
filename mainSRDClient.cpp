@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "srd.h"
 
@@ -184,6 +185,8 @@ int main(int argc, char**argv)
    	   printf ("Error in getting list of data stores.\n");
    }
    if (dsList) free (dsList);
+
+	while(1) {usleep(1);}
 
    srd_disconnect (sockfd); // disconnect this client, leave server running
    // srd_terminateServer (sockfd); // terminate server and disconnect this client
