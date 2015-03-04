@@ -27,7 +27,7 @@ int main(int argc, char**argv)
    int serverPort = 3500;
    char opDataStoreName [100];
    char xpath[100];
-   char *value;
+   char *value = NULL;
 
    if (argc != 2)
       serverIP = defaultServerIP;
@@ -40,13 +40,14 @@ int main(int argc, char**argv)
    }
 
    strcpy (opDataStoreName, "op_01");
-   strcpy (xpath, "/packet_stats/*");
+   // strcpy (xpath, "/packet_stats/*");
+   strcpy(xpath, "/data/*");
    srd_applyXPathOpDataStore (sockfd, opDataStoreName, xpath, &value);
    if (value){
 	   printf ("Result of XPATH '%s' on Operational Data Store %s is : %s\n", xpath, opDataStoreName, value);
 	   free (value);
    } else {
-	   printf ("Result of XPath '%s' on Operational Data Store %s not found.\n", xpath, opDataStoreName);
+	   printf ("Result of XPath '%s' on Operational Data Store %s is NULL.\n", xpath, opDataStoreName);
    }
 
    srd_disconnect (sockfd); // disconnect this client, leave server running

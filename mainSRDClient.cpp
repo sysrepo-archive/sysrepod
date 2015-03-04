@@ -23,7 +23,7 @@
 void
 opDataStoreHandleXPath (int sockfd, xmlDocPtr ds, xmlChar *xpathExpr)
 {
-	char *contentBuff;
+	char *contentBuff = NULL;
 	int   contentBuffSize = 100;
 	int len = 0;
 	char sendline[100];
@@ -312,14 +312,15 @@ int main(int argc, char**argv)
    }
 
    //Due to bug in the last section: EXIT NOW.
-   srd_disconnect (sockfd);
-   exit(0);
+   //srd_disconnect (sockfd);
+   //exit(0);
 
    // The following code can be read as it is approximately correct, there is some BUG that is being fixed.
    /*  Example Code to receive a request from SYSREPOD for Operational Data and respond to it. */
 
    strcpy (dataStoreName, "op_01"); // assuming that I have one Op Data Store called 'op_01'
-   printf ("Waiting for one sample request to apply XPath on one of my Operational Data Stores.....");
+   printf ("Waiting for one sample request to apply XPath on one of my Operational Data Stores.....\n");
+   fflush (stdout);
    // assume there is one operation data store 'op_01' is being maintained by this South Client.
    strcpy (myOpDataStoreXML, "<data><interfaces-state><interface><name></name><type></type><admin-status></admin-status><oper-status></oper-status><last-change></last-change><if-index></if-index><phys-address></phys-address><higher-layer-if></higher-layer-if><lower-layer-if></lower-layer-if><speed></speed><statistics><discontinuity-time></discontinuity-time><in-octets></in-octets><in-unicast-pkts></in-unicast-pkts><in-broadcast-pkts></in-broadcast-pkts> <in-multicast-pkts></in-multicast-pkts><in-discards></in-discards> <in-errors></in-errors> <in-unknown-protos></in-unknown-protos> <out-octets></out-octets> <out-unicast-pkts></out-unicast-pkts> <out-broadcast-pkts></out-broadcast-pkts> <out-multicast-pkts></out-multicast-pkts> <out-discards></out-discards> <out-errors/> </statistics> </interface> </interfaces-state> </data>");
    myOpDataStore = xmlReadMemory (myOpDataStoreXML, strlen (myOpDataStoreXML), "noname.xml", NULL, 0);
@@ -389,6 +390,10 @@ int main(int argc, char**argv)
 
    /********* END of examples for Operational Data Stores ***************************/
 
+   while (1) sleep (2);
+   fflush (stdout);
+   printf ("About to disconnect from SYSREPOD server\n");
+   fflush (stdout);
    srd_disconnect (sockfd); // disconnect this client, leave server running
    // srd_terminateServer (sockfd); // terminate server and disconnect this client
    exit (0);

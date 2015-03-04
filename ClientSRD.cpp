@@ -8,6 +8,7 @@
 #include <string.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <unistd.h>
 
 #include "common.h"
 #include "ClientSet.h"
@@ -350,6 +351,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			retValue = -2;
 			sprintf (outBuffer, "<xml><ok/></xml>");
 			common::SendMessage(cinfo->sock, outBuffer);
+			sleep (3); // Do not want to kill socket too quickly, otherwise client will not be able to read response
 	} else {
 			sprintf (outBuffer, "<xml><error>Command not supported: %s</error></xml>", (char *) command);
 			common::SendMessage(cinfo->sock, outBuffer);
