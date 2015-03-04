@@ -13,6 +13,7 @@
 #include "ClientSet.h"
 #include "ClientSRD.h"
 #include "DataStoreSet.h"
+#include "OpDataStoreSet.h"
 
 #include <libxml/xmlreader.h>
 
@@ -33,6 +34,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 	xmlChar *command;
 	xmlChar *param1, *param2;
 	int retValue = 0;
+	int n;
 
 	strcpy((char *)xpath, "/xml/command");
 	doc = xmlReadMemory(commandXML, strlen(commandXML), "noname.xml", NULL, 0);
@@ -52,18 +54,86 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		    strcpy ((char *) xpath, "/xml/param1");
             param1 = ClientSet::GetFirstNodeValue(doc, xpath);
             if(param1 == NULL){
-               sprintf (outBuffer, "<xml><error>Value of data store not found</error></xml>");
+               cinfo->dataStore = NULL;
+               sprintf (outBuffer, "<xml><ok>Data Store set to NULL for this client</ok></xml>");
 			   common::SendMessage(cinfo->sock, outBuffer);
             } else {
                cinfo->dataStore = DataStores->getDataStore ((char *)param1);
                if (cinfo->dataStore){
                   sprintf (outBuffer, "<xml><ok/></xml>");
                } else {
-            	   sprintf (outBuffer, "<xml><error>Data Store %s not found</error></xml>", param1);
+            	   sprintf (outBuffer, "<xml><error>Data Store '%s' not found</error></xml>", param1);
                }
                common::SendMessage(cinfo->sock, outBuffer);
                xmlFree (param1);
             }
+	} else if (strcmp((char *)command, "stopUsing_opDataStore") == 0){
+	    strcpy ((char *) xpath, "/xml/param1");
+        param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+        if(param1 == NULL){
+        	n = OpDataStores->removeOwner (cinfo);
+        	if (n < 0){
+        	    sprintf (outBuffer, "<xml><error>Failed to lock Op DataStoreSet</error></xml>");
+        	} else {
+        	    sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+        	}
+        	common::SendMessage(cinfo->sock, outBuffer);
+        } else {
+           n = OpDataStores->removeOwner ((char *)param1, cinfo);
+           if (n < 0){
+        	  sprintf (outBuffer, "<xml><error>Either Op Data Store not found or client does not own it</error></xml>");
+           } else {
+              sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+           }
+           common::SendMessage(cinfo->sock, outBuffer);
+           xmlFree (param1);
+        }
+	} else if (strcmp ((char *)command, "use_opDataStore") == 0){
+	    strcpy ((char *) xpath, "/xml/param1");
+        param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+        if(param1 == NULL){
+           sprintf (outBuffer, "<xml><error>Op Data Store name missing</error></xml>");
+		   common::SendMessage(cinfo->sock, outBuffer);
+        } else {
+           if(!OpDataStores->setOwner ((char *)param1, cinfo)){
+        	  sprintf (outBuffer, "<xml><error>Either Op Data Store not found or it is already owned by some other client</error></xml>");
+           } else {
+              sprintf (outBuffer, "<xml><ok/></xml>");
+           }
+           common::SendMessage(cinfo->sock, outBuffer);
+           xmlFree (param1);
+        }
+	} else if (strcmp((char *)command, "create_opDataStore") == 0){
+	    strcpy ((char *) xpath, "/xml/param1");
+        param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+        if(param1 == NULL){
+           sprintf (outBuffer, "<xml><error>Op Data Store name missing</error></xml>");
+		   common::SendMessage(cinfo->sock, outBuffer);
+        } else {
+           if(!OpDataStores->addOpDataStore ((char *)param1)){
+        	  sprintf (outBuffer, "<xml><error>Either Op Data Store not added</error></xml>");
+           } else {
+              sprintf (outBuffer, "<xml><ok/></xml>");
+           }
+           common::SendMessage(cinfo->sock, outBuffer);
+           xmlFree (param1);
+        }
+	} else if (strcmp ((char *)command, "delete_opDataStore") == 0){
+	    strcpy ((char *) xpath, "/xml/param1");
+        param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+        if(param1 == NULL){
+           sprintf (outBuffer, "<xml><error>Op Data Store name missing</error></xml>");
+		   common::SendMessage(cinfo->sock, outBuffer);
+        } else {
+           n = OpDataStores->deleteOpDataStore ((char *)param1, cinfo);
+           if ( n < 0){
+        	  sprintf (outBuffer, "<xml><error>Either Op Data Store does not exist or you do not own it</error></xml>");
+           } else {
+              sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+           }
+           common::SendMessage(cinfo->sock, outBuffer);
+           xmlFree (param1);
+        }
 	} else if(strcmp ((char *)command, "apply_xpath")==0){
 		char *printBuff = NULL;
 		strcpy ((char *) xpath, "/xml/param1");
@@ -96,6 +166,39 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		   common::SendMessage(cinfo->sock, printBuff);
 		   free (printBuff);
 		}
+	} else if (strcmp ((char *)command, "apply_xpathOpDataStore") == 0){
+		char *printBuff = NULL;
+		// need to read 2 parameters: OpDataStore Name and XPath to apply
+		strcpy ((char *) xpath, "/xml/param1");
+		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+		if(param1 == NULL){
+			sprintf (outBuffer, "<xml><error>Op DataStore name not found</error></xml>");
+		} else {
+			char log[100];
+			strcpy ((char *) xpath, "/xml/param2");
+			param2 = ClientSet::GetFirstNodeValue(doc, xpath);
+			if(param2 == NULL){
+				sprintf (outBuffer, "<xml><error>XPath not found</error></xml>");
+		    } else {
+			    int printBuffSize = 100;
+			    printBuff = (char *)malloc (printBuffSize);
+			    if (printBuff == NULL) {
+			       sprintf (outBuffer, "<xml><error>Unable to allocate buffer space</error></xml>");
+			    } else if (!OpDataStores->applyXPathOpDataStore (commandXML, (char *)param1, &printBuff, printBuffSize)){
+		        	sprintf (outBuffer, "<xml><error>%s</error></xml>", printBuff);
+		        	free (printBuff);
+		        	printBuff = NULL;
+		        }
+			    xmlFree (param2);
+			}
+		    xmlFree (param1);
+		}
+        if (printBuff == NULL){
+        	common::SendMessage(cinfo->sock, outBuffer);
+        }else {
+        	common::SendMessage(cinfo->sock, &(printBuff[MSGLENFIELDWIDTH + 1]));
+        	free (printBuff);
+        }
 	} else if (strcmp ((char *)command, "lock_dataStore") == 0){
 		if (cinfo->dataStore == NULL){
 			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
@@ -190,6 +293,36 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			// list is empty
 			msg = (char *)malloc (100);
 			sprintf (msg, "<xml><ok><dataStores></dataStores></ok></xml>");
+		}
+        common::SendMessage(cinfo->sock, msg);
+        free (msg);
+        if (list) free (list);
+	} else if (strcmp ((char *)command, "list_opDataStores") == 0){
+		char *list = NULL;
+		char *msg;
+		list = OpDataStores->getList ();
+		if (list && strlen (list) > 0){
+			msg = (char *)malloc (strlen(list) + 100);
+			sprintf (msg, "<xml><ok>%s</ok></xml>", list);
+		} else {
+			// list is empty
+			msg = (char *)malloc (100);
+			sprintf (msg, "<xml><ok><opDataStores></opDataStores></ok></xml>");
+		}
+        common::SendMessage(cinfo->sock, msg);
+        free (msg);
+        if (list) free (list);
+	} else if (strcmp((char *)command, "list_myUsageOpDataStores") == 0){
+		char *list = NULL;
+		char *msg;
+		list = OpDataStores->listMyUsage (cinfo);
+		if (list && strlen (list) > 0){
+			msg = (char *)malloc (strlen(list) + 100);
+			sprintf (msg, "<xml><ok>%s</ok></xml>", list);
+		} else {
+			// list is empty
+			msg = (char *)malloc (100);
+			sprintf (msg, "<xml><ok><opDataStores></opDataStores></ok></xml>");
 		}
         common::SendMessage(cinfo->sock, msg);
         free (msg);

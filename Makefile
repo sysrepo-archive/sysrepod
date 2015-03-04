@@ -1,12 +1,12 @@
 GCC = g++
 
-all: sysrepod clientsrd install
+all: sysrepod clientsrd opDStoreClient install
 
 clean:
 	rm *.o sysrepod clientsrd libsrd.a server/sysrepod client_SRD/clientsrd
 
-sysrepod: common.o mainSysRepoD.o ClientSet.o DataStore.o DataStoreSet.o Client.o ClientSRD.o global.h application.h
-	$(GCC) -g -o sysrepod mainSysRepoD.o common.o ClientSet.o DataStore.o DataStoreSet.o Client.o ClientSRD.o -pthread -lxml2
+sysrepod: common.o mainSysRepoD.o ClientSet.o DataStore.o DataStoreSet.o Client.o ClientSRD.o global.h application.h OpDataStore.o OpDataStoreSet.o
+	$(GCC) -g -o sysrepod mainSysRepoD.o common.o ClientSet.o DataStore.o DataStoreSet.o OpDataStore.o OpDataStoreSet.o Client.o ClientSRD.o -pthread -lxml2
 	
 mainSysRepoD.o: mainSysRepoD.cpp global.h application.h
 	$(GCC) -c -I/usr/include/libxml2 -g mainSysRepoD.cpp
@@ -28,12 +28,24 @@ DataStore.o: DataStore.cpp DataStore.h
 
 DataStoreSet.o: DataStoreSet.cpp DataStoreSet.h
 	$(GCC) -I/usr/include/libxml2 -c -g DataStoreSet.cpp
+	
+OpDataStore.o: OpDataStore.cpp OpDataStore.h
+	$(GCC) -c -g OpDataStore.cpp
+
+OpDataStoreSet.o: OpDataStoreSet.cpp OpDataStoreSet.h
+	$(GCC) -c -g OpDataStoreSet.cpp
 
 clientsrd: mainSRDClient.o srd.o libsrd.a
 	$(GCC) -g -o clientsrd mainSRDClient.o libsrd.a -lxml2
 
 mainSRDClient.o: mainSRDClient.cpp
-	$(GCC) -g -c mainSRDClient.cpp
+	$(GCC) -I/usr/include/libxml2 -g -c mainSRDClient.cpp
+	
+opDStoreClient: mainOpDStoreMgmtClient.o srd.o libsrd.a
+	$(GCC) -g -o opDStoreClient mainOpDStoreMgmtClient.o libsrd.a -lxml2
+	
+mainOpDStoreMgmtClient.o: mainOpDStoreMgmtClient.cpp
+	$(GCC) -I/usr/include/libxml2 -g -c mainOpDStoreMgmtClient.cpp
 	
 srd.o: srd.cpp srd.h
 	$(GCC) -I/usr/include/libxml2 -g -c srd.cpp
@@ -44,4 +56,6 @@ libsrd.a: srd.o
 install: sysrepod
 	cp sysrepod server
 	cp clientsrd client_SRD
+	cp opDStoreClient client_SRD
+	
 	

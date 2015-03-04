@@ -20,6 +20,7 @@
 #include "ClientSet.h"
 #include "common.h"
 #include "ClientSRD.h"
+#include "OpDataStoreSet.h"
 
 
 
@@ -356,6 +357,8 @@ ClientSet::thrdMain (void *arg)
 		  break;
 	   }
 	}
+	// remove this client's ownership of all Op Data Stores
+	OpDataStores->removeOwner (cinfo);
 	if (cinfo->sock != INVALID_SOCK){
 		close (cinfo->sock);
 		cinfo->sock = INVALID_SOCK;

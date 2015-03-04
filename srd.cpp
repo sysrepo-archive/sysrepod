@@ -5,8 +5,6 @@
  *      Author: niraj
  */
 
-#include "srd.h"
-
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -18,12 +16,13 @@
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 
+#include "srd.h"
+
 #define MSGLENFIELDWIDTH 7
 int  srd_isServerResponseOK (int sockfd, char **OKcontent);
 
-// local functions
-int
-sendServer (int sockfd, char *message, int msgSize)
+bool
+srd_sendServer (int sockfd, char *message, int msgSize)
 {
    char fmt[20];
    char msgSizeStr[MSGLENFIELDWIDTH + 10];
@@ -50,11 +49,11 @@ sendServer (int sockfd, char *message, int msgSize)
       sent = sent + n;
       toSend = toSend - n;
    }
-   return 1;
+   return true;
 }
 
 int
-recvServer (int sockfd, char **buffPtr, int *buffSize)
+srd_recvServer (int sockfd, char **buffPtr, int *buffSize)
 {
 	int len = 0;
 	int waitCount = 0;
@@ -97,7 +96,7 @@ recvServer (int sockfd, char **buffPtr, int *buffSize)
 }
 
 xmlXPathObjectPtr
-getNodeSet (xmlDocPtr doc, xmlChar *xpath, char *log)
+srd_getNodeSet (xmlDocPtr doc, xmlChar *xpath, char *log)
 {
 	xmlXPathContextPtr context;
 	xmlXPathObjectPtr result;
@@ -123,7 +122,7 @@ getNodeSet (xmlDocPtr doc, xmlChar *xpath, char *log)
 }
 
 xmlChar *
-getFirstNodeValue (xmlDocPtr doc, xmlChar *xpath)
+srd_getFirstNodeValue (xmlDocPtr doc, xmlChar *xpath)
 {
 	char log[200];
 	xmlXPathObjectPtr result;
@@ -133,7 +132,7 @@ getFirstNodeValue (xmlDocPtr doc, xmlChar *xpath)
 	if (doc == NULL){
 		return NULL; // error
 	}
-	result = getNodeSet(doc, xpath, log);
+	result = srd_getNodeSet(doc, xpath, log);
 	if (result == NULL){
 		return NULL; // error
 	}
@@ -148,7 +147,7 @@ getFirstNodeValue (xmlDocPtr doc, xmlChar *xpath)
 }
 
 int
-printElementSet (xmlDocPtr doc, xmlNodeSet *nodeSet, char **printBuffPtr, int printBuffSize)
+srd_printElementSet (xmlDocPtr doc, xmlNodeSet *nodeSet, char **printBuffPtr, int printBuffSize)
 {
     xmlNode *cur_node = NULL;
     int n, i;
@@ -207,7 +206,7 @@ srd_connect (char *serverIP, int serverPort, int *sockfd)
        return 0;
    }
    // send protocol info to server
-   if (!sendServer (*sockfd, setProtoMsg, strlen(setProtoMsg))){
+   if (!srd_sendServer (*sockfd, setProtoMsg, strlen(setProtoMsg))){
       printf ("libsrd.a: Error in sending mes#include <libxml/xpathInternals.h>sage to set Protocol to server.\n");
       close (*sockfd);
       *sockfd = -1;
@@ -228,9 +227,14 @@ srd_setDataStore (int sockfd, char *dsname)
 {
    char *msg;
 
-   msg = (char *)malloc (strlen(dsname) + 100);
-   sprintf (msg, "<xml><command>set_dataStore</command><param1>%s</param1></xml>", dsname);
-   if (!sendServer (sockfd, msg, strlen(msg))){
+   if (dsname && strlen(dsname) > 0){
+	  msg = (char *)malloc (strlen(dsname) + 100);
+      sprintf (msg, "<xml><command>set_dataStore</command><param1>%s</param1></xml>", dsname);
+   } else {
+	   msg = (char *)malloc (100);
+	   sprintf (msg, "<xml><command>set_dataStore</command><param1></param1></xml>");
+   }
+   if (!srd_sendServer (sockfd, msg, strlen(msg))){
       printf ("libsrd.a: Error in sending msg: %s\n", msg);
       free (msg);
       return 0;
@@ -253,13 +257,21 @@ srd_applyXPath (int sockfd, char *xpath, char **buffPtr)
 	   printf ("libsrd.a: Buffer Pointer is null. No place to return results.\n");
 	   return;
    }
+   if (xpath == NULL){
+	   printf ("libsrd.a: XPath pointer can not be NULL.\n");
+	   return;
+   }
+   if (strlen (xpath) < 1){
+	   printf ("linsrd.a: XPath content is missing.\n");
+	   return;
+   }
    msg = (char *)malloc (strlen(xpath) + 100);
    if (!msg){
 	   printf ("libsrd.a: Unable to allocate space.\n");
 	   return;
    }
    sprintf (msg, "<xml><command>apply_xpath</command><param1>%s</param1></xml>", xpath);
-   if (!sendServer (sockfd, msg, strlen(msg))){
+   if (!srd_sendServer (sockfd, msg, strlen(msg))){
       printf ("libsrd.a: Error in sending msg: %s\n", msg);
    }
    if (!srd_isServerResponseOK (sockfd, buffPtr)){
@@ -274,7 +286,7 @@ srd_terminateServer (int sockfd)
 {
 	char msg[50];
 	sprintf (msg, "<xml><command>terminate</command></xml>");
-	if (!sendServer (sockfd, msg, strlen(msg))){
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	   printf ("libsrd.a: Error in sending msg: %s\n", msg);
     }
 	if (!srd_isServerResponseOK (sockfd, NULL)){
@@ -290,7 +302,7 @@ srd_disconnect (int sockfd)
 {
 	char msg[50];
 	sprintf (msg, "<xml><command>disconnect</command></xml>");
-	if (!sendServer (sockfd, msg, strlen(msg))){
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	   printf ("libsrd.a: Error in sending msg: %s\n", msg);
 	}
 	if (!srd_isServerResponseOK (sockfd, NULL)){
@@ -305,7 +317,7 @@ srd_lockDataStore (int sockfd)
 {
 	char msg[50];
     sprintf (msg, "<xml><command>lock_dataStore</command></xml>");
-    if (!sendServer (sockfd, msg, strlen(msg))){
+    if (!srd_sendServer (sockfd, msg, strlen(msg))){
 		printf ("libsrd.a: Error in sending msg: %s\n", msg);
 		return 0;
 	}
@@ -321,7 +333,7 @@ srd_unlockDataStore (int sockfd)
 {
 	char msg[50];
     sprintf (msg, "<xml><command>unlock_dataStore</command></xml>");
-    if (!sendServer (sockfd, msg, strlen(msg))){
+    if (!srd_sendServer (sockfd, msg, strlen(msg))){
 		printf ("libsrd.a: Error in sending msg: %s\n", msg);
 		return 0;
 	}
@@ -346,13 +358,13 @@ srd_updateNodes (int sockfd, char *xpath, char *value)
 		return -1;
 	}
 	sprintf (msg, "<xml><command>update_nodes</command><param1>%s</param1><param2>%s</param2></xml>", xpath, value);
-	if (!sendServer (sockfd, msg, strlen(msg))){
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
 	    free (msg);
 	    return -1;
 	}
 	if (!srd_isServerResponseOK (sockfd, &result)){
-		printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
+		printf ("libsrd.a: Server response to apple XPath is not OK.\n");
 		free (msg);
 		return -1;
 	}
@@ -389,7 +401,7 @@ srd_isServerResponseOK(int sockfd, char **OKcontent)
 		printf ("libsrd.a: Unable to allocate space.\n");
 		return 0;
 	}
-	ret = recvServer (sockfd, &buffPtr, &buffSize);
+	ret = srd_recvServer (sockfd, &buffPtr, &buffSize);
 	if (!ret){
 		printf ("libsrd.a: Call to read response from server returned 0 - failure\n");
 		if(buffPtr) free (buffPtr);
@@ -406,7 +418,7 @@ srd_isServerResponseOK(int sockfd, char **OKcontent)
 	    return 0;
 	}
 	strcpy ((char *)xpathExpr, "/xml/ok");
-	xpathObj = getNodeSet (doc, (xmlChar *)xpathExpr, log);
+	xpathObj = srd_getNodeSet (doc, (xmlChar *)xpathExpr, log);
     if(xpathObj == NULL) {
 	   // Error: unable to evaluate xpath expression OR OK node does not exit
 	   xmlFreeDoc(doc);
@@ -433,11 +445,11 @@ srd_isServerResponseOK(int sockfd, char **OKcontent)
 
     			// get the value of OK node from server-response
     			strcpy ((char *)xpathExpr, "/xml/ok/*");
-    			xpathObj_local = getNodeSet (doc, (xmlChar *) xpathExpr, log);
+    			xpathObj_local = srd_getNodeSet (doc, (xmlChar *) xpathExpr, log);
     			if (xpathObj_local != NULL){
     				nodes_local = xpathObj_local->nodesetval;
     				if (nodes_local->nodeNr > 0){
-    					len = printElementSet (doc, nodes_local, &contentBuff, contentBuffSize);
+    					len = srd_printElementSet (doc, nodes_local, &contentBuff, contentBuffSize);
     					if (len < 0){
     					    printf ("libsrd.a: Unable to read content of <ok> node in server response.\n");
     					    ret = 0;
@@ -454,7 +466,7 @@ srd_isServerResponseOK(int sockfd, char **OKcontent)
     			} else { // <ok> node may contain value: extract that
     				char *okValue;
     				strcpy ((char *)xpathExpr, "/xml/ok");
-    				okValue = (char *)getFirstNodeValue(doc, xpathExpr);
+    				okValue = (char *)srd_getFirstNodeValue(doc, xpathExpr);
     				if(okValue != NULL){
     				   *OKcontent = okValue; // caller need to free it.
     				}
@@ -504,13 +516,13 @@ int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, cha
 		strcat (msg, "</param4>");
 	}
 	strcat (msg, "</xml>");
-	if (!sendServer (sockfd, msg, strlen(msg))){
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
 	    free (msg);
 	    return 0;
 	}
 	if (!srd_isServerResponseOK (sockfd, NULL)){
-		printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
+		printf ("libsrd.a: Server response is not OK.\n");
 		free (msg);
 		return 0;
 	}
@@ -524,12 +536,12 @@ srd_listDataStores (int sockfd, char **result)
 	char msg[100];
 
 	sprintf (msg, "<xml><command>list_dataStores</command></xml>");
-	if (!sendServer (sockfd, msg, strlen(msg))){
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
 	    return false;
 	}
 	if (!srd_isServerResponseOK (sockfd, result)){
-		printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
+		printf ("libsrd.a: Server response is not OK.\n");
 		return false;
 	}
 	return true;
@@ -544,19 +556,23 @@ srd_deleteDataStore (int sockfd, char *name)
 	int intValue;
 	bool retValue;
 
+	if (name == NULL || strlen (name) == 0){
+		printf ("libsrd.a: Name of Data Store can not be absent.\n");
+		return (-1);
+	}
 	msg = (char *)malloc (strlen(name) + 100);
 	if (!msg){
 		printf ("libsrd.a: Unable to allocate space.\n");
 		return -1;
 	}
 	sprintf (msg, "<xml><command>delete_dataStore</command><param1>%s</param1></xml>", name);
-	if (!sendServer (sockfd, msg, strlen(msg))){
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
 	    free (msg);
 	    return -1;
 	}
 	if (!srd_isServerResponseOK (sockfd, &result)){
-		printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
+		printf ("libsrd.a: Server response is not OK.\n");
 		free (msg);
 		return -1;
 	}
@@ -573,4 +589,209 @@ srd_deleteDataStore (int sockfd, char *name)
 	}
 	free (msg);
 	return n;
+}
+
+
+int
+srd_createOpDataStore (int sockfd, char *name)
+{
+	char *msg;
+	int   msgSpace;
+
+	if (name == NULL || strlen (name) == 0){
+		printf ("libsrd.a: Name of Operational Data Store can not be absent.\n");
+		return (0);
+	}
+
+	msgSpace = strlen(name) + 100;
+	msg = (char *)malloc (msgSpace);
+	if (!msg){
+		printf ("libsrd.a: Unable to allocate space.\n");
+		return 0;
+	}
+	sprintf (msg, "<xml><command>create_opDataStore</command><param1>%s</param1></xml>", name);
+
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    free (msg);
+	    return 0;
+	}
+	if (!srd_isServerResponseOK (sockfd, NULL)){
+		printf ("libsrd.a: Server response is not OK.\n");
+		free (msg);
+		return 0;
+	}
+	free (msg);
+	return 1;
+
+}
+int
+srd_deleteOpDataStore (int sockfd, char *name)
+{
+	char *msg;
+	char *result;
+	int n = -1;
+	int intValue;
+	bool retValue;
+
+	if (name == NULL || strlen (name) == 0){
+		printf ("libsrd.a: Name of Operational Data Store can not be absent.\n");
+		return (-1);
+	}
+
+	msg = (char *)malloc (strlen(name) + 100);
+	if (!msg){
+		printf ("libsrd.a: Unable to allocate space.\n");
+		return -1;
+	}
+	sprintf (msg, "<xml><command>delete_opDataStore</command><param1>%s</param1></xml>", name);
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    free (msg);
+	    return -1;
+	}
+	if (!srd_isServerResponseOK (sockfd, &result)){
+		printf ("libsrd.a: Server response is not OK.\n");
+		free (msg);
+		return -1;
+	}
+	if (result) {
+		   n = sscanf (result, "%d", &intValue);
+		   if (n == 0) {
+			   n = -1; // error condition.
+		   } else {
+			   n = intValue;
+		   }
+		   free (result);
+	} else {
+        printf ("libsrd.a: Unable to read how many Operational Data Stores deleted. Unpredictable modificatons done in data store.\n");
+	}
+	free (msg);
+	return n;
+
+}
+bool
+srd_listOpDataStores (int sockfd, char **result)
+{
+	char msg[100];
+
+	sprintf (msg, "<xml><command>list_opDataStores</command></xml>");
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    return false;
+	}
+	if (!srd_isServerResponseOK (sockfd, result)){
+		printf ("libsrd.a: Server response is not OK.\n");
+		return false;
+	}
+	return true;
+
+}
+bool
+srd_listMyUsageOpDataStores (int sockfd, char **result)
+{
+	char msg[100];
+
+	sprintf (msg, "<xml><command>list_myUsageOpDataStores</command></xml>");
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    return false;
+	}
+	if (!srd_isServerResponseOK (sockfd, result)){
+		printf ("libsrd.a: Server response is not OK.\n");
+		return false;
+	}
+	return true;
+}
+
+int
+srd_useOpDataStore (int sockfd, char *name)
+{
+   char *msg;
+
+   if (name && strlen(name) > 0){
+	  msg = (char *)malloc (strlen(name) + 100);
+	  sprintf (msg, "<xml><command>use_opDataStore</command><param1>%s</param1></xml>", name);
+   } else {
+	  printf ("Error: Operational Data Store name can not be absent.\n");
+	  return 0;
+   }
+   if (!srd_sendServer (sockfd, msg, strlen(msg))){
+      printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	  free (msg);
+	  return 0;
+   }
+   if (!srd_isServerResponseOK (sockfd, NULL)){
+      printf ("libsrd.a: Server response to set data store is not OK.\n");
+	  free (msg);
+	  return 0;
+   }
+   free (msg);
+   return 1;
+}
+
+int
+srd_stopUsingOpDataStore (int sockfd, char *name)
+{
+   char *msg;
+
+   if (name && strlen(name) > 0){
+      msg = (char *)malloc (strlen(name) + 100);
+	  sprintf (msg, "<xml><command>stopUsing_opDataStore</command><param1>%s</param1></xml>", name);
+   } else {
+	  printf ("Error: Operational Data Store name can not be absent.\n");
+	  return 0;
+   }
+   if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	  printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	  free (msg);
+	  return 0;
+   }
+   if (!srd_isServerResponseOK (sockfd, NULL)){
+	  printf ("libsrd.a: Server response to set data store is not OK.\n");
+	  free (msg);
+	  return 0;
+   }
+   free (msg);
+   return 1;
+}
+
+void
+srd_applyXPathOpDataStore (int sockfd, char *opDataStoreName, char *xpath, char **buffPtr)
+{
+   char *msg;
+
+   if (buffPtr == NULL) {
+	  printf ("libsrd.a: Buffer Pointer is null. No place to return results.\n");
+	  return;
+   }
+   if (xpath == NULL){
+   	  printf ("libsrd.a: XPath pointer can not be NULL.\n");
+   	  return;
+   }
+   if (strlen (xpath) < 1){
+   	  printf ("linsrd.a: XPath content is missing.\n");
+   	  return;
+   }
+   if (opDataStoreName == NULL){
+	   printf ("libsrd.a: Operational Data Store name is missing.\n");
+	   return;
+   }
+   if (strlen (opDataStoreName) < 1){
+	   printf ("libsrd.a: Operational Data Store name is not present.\n");
+	   return;
+   }
+   msg = (char *)malloc (strlen(xpath) + strlen (opDataStoreName) + 100);
+   if (!msg){
+	   printf ("libsrd.a: Unable to allocate space.\n");
+	   return;
+   }
+   sprintf (msg, "<xml><command>apply_xpathOpDataStore</command><param1>%s</param1><param2>%s</param2></xml>", opDataStoreName, xpath);
+   if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	   printf ("libsrd.a: Error in sending msg: %s\n", msg);
+   }
+   if (!srd_isServerResponseOK (sockfd, buffPtr)){
+	   printf ("libsrd.a: Server response to apply XPATH on Operational Data Store is not OK.\n");
+   }
+   free (msg);
 }

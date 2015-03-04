@@ -36,9 +36,12 @@
 
 #define INVALID_SOCK -1
 
+#define MAXOPDATASTORENAMELEN 201
+
 #include "application.h"
 
 class DataStoreSet;
+class OpDataStoreSet;
 
 #ifdef MAIN_C_
 long MaxLogSize;
@@ -59,7 +62,9 @@ bool TerminateNow = false;
 int  LogLevel = 10;   // Level of log, higher the number more log messages
 int  MaxClients = 20; // Max number of clients that can connect to this server
 int  MaxDataStores; // Max number of data store that this server can maintain
+int  MaxOpDataStores;
 DataStoreSet *DataStores = NULL;
+OpDataStoreSet *OpDataStores = NULL;
 
 #else
 
@@ -80,7 +85,9 @@ extern bool TerminateNow;
 extern int  LogLevel;
 extern int  MaxClients;
 extern int  MaxDataStores;
+extern int  MaxOpDataStores;
 extern DataStoreSet *DataStores;
+extern OpDataStoreSet *OpDataStores;
 
 #endif
 

@@ -17,20 +17,24 @@ DataStore::DataStore(char *dsname, char * filename, char *xsddir, char *xsltdir)
    doc = NULL;
    if (filename == NULL || strlen(filename) > PATHLEN){
 	   fileName[0] = '\0';
+	   printf ("File path for Data Store '%s' is longer than the limit %d.\n", filename, PATHLEN);
    } else {
       strcpy (fileName, filename);
    }
    if (dsname == NULL || strlen (dsname) > MAXDATASTORENAMELEN){
+	   printf ("Data Store name '%s' is longer than the limit %d.\n", dsname, MAXDATASTORENAMELEN);
 	   name[0] = '\0';
    } else {
 	   strcpy (name, dsname);
    }
    if (xsddir == NULL || strlen(xsddir) > PATHLEN){
+	   printf ("XSD Dir path for Data Store '%s' is longer than the limit %d.\n", xsddir, PATHLEN);
    	   xsdDir[0] = '\0';
    } else {
        strcpy (xsdDir, xsddir);
    }
    if (xsltdir == NULL || strlen(xsltdir) > PATHLEN){
+	   printf ("XSLT Dir path for Data Store '%s' is longer than the limit %d.\n", xsltdir, PATHLEN);
    	   xsltDir[0] = '\0';
    } else {
        strcpy (xsltDir, xsltdir);
@@ -42,6 +46,7 @@ DataStore::DataStore(char *dsname)
    doc = NULL;
    fileName[0] = '\0';
    if (dsname == NULL || strlen (dsname) > MAXDATASTORENAMELEN){
+	   printf ("Data Store name '%s' is longer than the limit %d.\n", dsname, MAXDATASTORENAMELEN);
 	   name[0] = '\0';
    } else {
 	   strcpy (name, dsname);

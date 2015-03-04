@@ -32,6 +32,7 @@
 #include "common.h"
 #include "ClientSet.h"
 #include "DataStoreSet.h"
+#include "OpDataStoreSet.h"
 
 /* TO DO: Add Signal Handlers */
 
@@ -58,6 +59,7 @@ applyDefaultSettings(void)
 	ServerPort = 3500;
 	MaxClients = 20;
 	MaxDataStores = 50;
+	MaxOpDataStores = 50;
 }
 
 void
@@ -70,6 +72,16 @@ createDataStoreSet ()
 		exit (1);
 	}
 
+}
+
+void
+createOpDataStoreSet ()
+{
+	OpDataStores = new OpDataStoreSet();
+	if (!OpDataStores->initialize (MaxOpDataStores)){
+		printf ("Fatal Error: Unable to allocate memeory for Op DataStores.\n");
+		exit (1);
+	}
 }
 
 // parameter contains DataStore Name, XML File, XSD Dir, and XSLT Dir. Last two values are
@@ -156,6 +168,9 @@ applySettings(int argc, char **argv)
 			} else if (strcmp(name, "DATASTORE") == 0){
 				createDataStoreSet();
 				addDataStore (value);
+			} else if (strcmp(name, "MAXOPDATASTORES") == 0){
+				MaxOpDataStores = atoi (value);
+				createOpDataStoreSet();
 			}
 		}
 	}

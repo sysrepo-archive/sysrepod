@@ -16,6 +16,9 @@ MAXCLIENTS 25;
 # Max number of data stores
 MAXDATASTORES 50;
 
+# Max number of operational data stores
+MAXOPDATASTORES 25;
+
 # Define data stores: Data Store Name, its xmlData file, XSD dir, and XSLT dir
 DATASTORE runtime deviceConfig.xml;
 #DATASTORE runtime deviceConfig.xml XSD_runtime XSLT_runtime;

@@ -276,3 +276,44 @@ bool common::SendMessage (int sock, char *message)
 	return true;
 }
 
+int common::ReadSock (int sockfd, char **buffPtr, int buffSize)
+{
+	int len = 0;
+	int waitCount = 0;
+	int msgSize = 0;
+	int numBytesRead = 0;
+	int n;
+	char *newBuffer;
+
+	// First few chars in all messages reserved for message size followed by one white space.
+	while (msgSize == 0 && numBytesRead < MSGLENFIELDWIDTH + 1){
+	    n= recv(sockfd, &((*buffPtr)[numBytesRead]), buffSize - numBytesRead, 0);
+	    if (n < 1) return 0; // client is bad
+	    numBytesRead = numBytesRead + n;
+	    if (numBytesRead < MSGLENFIELDWIDTH + 1) continue; // need more bytes to proceed
+	    // read message size
+	    n = sscanf(*buffPtr, "%d", &msgSize);
+	    if (n != 1){ // msg len not found
+	        printf ("Unable to find message length.\n");
+	        return 0;
+	    }
+	    if (MSGLENFIELDWIDTH + 1 + msgSize + 1 > buffSize){ // input buffer is too small
+	    	newBuffer = (char *) realloc (*buffPtr, MSGLENFIELDWIDTH + 1 + msgSize + 1);
+	    	if (newBuffer == NULL){
+	    		printf ("Unable to allocate space.\n");
+	    		return 0; // error
+	    	}
+	    	*buffPtr = newBuffer;
+	        buffSize = MSGLENFIELDWIDTH + 1 + msgSize + 1;
+	    }
+	}
+	while ((MSGLENFIELDWIDTH + 1 + msgSize) > numBytesRead){
+	    // need to read more bytes
+	    n = recv(sockfd, &((*buffPtr)[numBytesRead]), buffSize - numBytesRead, 0);
+	    if (n < 1) return 0; // client is bad
+	    numBytesRead = numBytesRead + n;
+	}
+	// complete message read
+	(*buffPtr)[numBytesRead] = '\0';
+	return msgSize;
+}

@@ -170,13 +170,17 @@ DataStoreSet::getList (void)
 	}
 	requiredSize = requiredSize + strlen ("<dataStores></dataStores>") + 10;
 	list = (char *) malloc (requiredSize);
-	sprintf (list, "<dataStores>");
-	for (i=0; i < count; i++){
-		strcat (list, "<dataStore>");
-		strcat (list, dataStoreList[i]->name);
-		strcat (list, "</dataStore>");
+	if (list) {
+	   sprintf (list, "<dataStores>");
+	   for (i=0; i < count; i++){
+		   strcat (list, "<dataStore>");
+		   strcat (list, dataStoreList[i]->name);
+		   strcat (list, "</dataStore>");
+	   }
+	   strcat (list, "</dataStores>");
+	} else {
+		printf ("Unable to allocate space for Data Store list.");
 	}
-	strcat (list, "</dataStores>");
 	pthread_mutex_unlock(&dsMutex);
 	return list;
 }

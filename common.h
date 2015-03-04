@@ -29,6 +29,7 @@ public:
    static int  FileCount (char *path);
    static bool IsDir (char *path);
    static bool SendMessage (int sock, char *message);
+   static int  ReadSock (int sockfd, char **buffPtr, int buffSize);
 };
 
 #endif /* COMMON_H_ */
