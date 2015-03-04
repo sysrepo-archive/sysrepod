@@ -7,7 +7,17 @@
    In another XTERM window start sample client that talks SRD (Sys Repo Daemon) protocol:
      cd client_SRD
      # To run client that issues a few commands and exits.
-     ./clientsrd          
+     ./clientsrd 
+     # This client in the end will wait for a command from SysrepoD server requesting
+     # information about the Operational Data Store that this client is maintaining.
+     # There is a need of a North-bound client that initiates a request for Operational Data Store by
+     # send it to SysrepoD server. The server in turn forwards that request to this client "./clientsrd.
+     # To test this feature, it is time to start a sample North-Bound Client. To do that follow the following steps:
+     # Start a new XTERM window and be in the code directory.
+     cd client_SRD
+     ./opDStoreClient
+     # It will start this North-Side Management Client. You will see messages going to server and to 'clientsrd'
+     # started earlier.         
 
 4) One can run many clients in parallel from separate XTERM windows.
 5) ClientSRD.cpp implements a client class that talks SRD protocol. One can create additional classes
