@@ -127,6 +127,7 @@ applySettings(int argc, char **argv)
 	applyDefaultSettings();
 	if (argc < 2) {
 		createDataStoreSet ();
+		createOpDataStoreSet();
 		return;
 	}
 
@@ -170,12 +171,12 @@ applySettings(int argc, char **argv)
 				addDataStore (value);
 			} else if (strcmp(name, "MAXOPDATASTORES") == 0){
 				MaxOpDataStores = atoi (value);
-				createOpDataStoreSet();
 			}
 		}
 	}
-	// Data Store set may not be present. Make sure it is created.
+	// Data Store-Set may not be present. Make sure it is created.
 	createDataStoreSet();
+	createOpDataStoreSet();
 	fclose (paramFile);
 }
 
