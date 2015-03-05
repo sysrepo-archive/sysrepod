@@ -13,6 +13,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
@@ -63,6 +65,9 @@ ClientSet::initialize (int maximumClients)
 	    clients[i].clientSet = this;
 	    clients[i].dataStore = NULL;
 	    clients[i].index = i;
+	    clients[i].clientBackSock = -1;
+	    clients[i].clientIPAddress[0] = '\0';
+	    clients[i].clientPort = -1;
 	}
 	return false;
 }
@@ -410,4 +415,52 @@ ClientSet::isDataStoreInUse (DataStore *ds)
 	}
 	pthread_mutex_unlock(&csMutex);
 	return retValue;
+}
+
+void
+ClientSet::saveClientBackConnectionInfo (struct clientInfo *cinfo, char *IPAddress, int port)
+{
+   cinfo->clientPort = port;
+   strcpy(cinfo->clientIPAddress, IPAddress);
+   cinfo->clientBackSock = -1;
+}
+
+bool
+ClientSet::openBackConnection (struct clientInfo *cinfo)
+{
+	int ret;
+	struct sockaddr_in servaddr;
+
+	if (cinfo->clientBackSock > -1) return true; // socket is already open
+	if (cinfo->clientPort < 0){
+		printf ("Client port is not known.\n");
+		return false;
+	}
+	if (strlen (cinfo->clientIPAddress) < 4){
+		printf ("Client IP Address is not known.\n");
+		return false;
+	}
+	cinfo->clientBackSock = socket(AF_INET,SOCK_STREAM,0);
+
+	bzero(&servaddr,sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr=inet_addr(cinfo->clientIPAddress);
+	servaddr.sin_port=htons(cinfo->clientPort);
+
+	ret = connect(cinfo->clientBackSock, (struct sockaddr *)&servaddr, sizeof(servaddr));
+	if (ret != 0) {
+		cinfo->clientBackSock = -1;
+		printf ("Error in connecting to client at %s and port %d\n", cinfo->clientIPAddress, cinfo->clientPort);
+	    return false;
+	}
+	return true;
+}
+
+void
+ClientSet::closeBackConnection (struct clientInfo *cinfo)
+{
+    if (cinfo->clientBackSock != -1) {
+    	close (cinfo->clientBackSock);
+    	cinfo->clientBackSock = -1;
+    }
 }

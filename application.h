@@ -34,6 +34,9 @@ typedef struct clientInfo{
     Client *client;
     ClientSet *clientSet;
     int index;
+    char clientIPAddress[50];
+    int  clientPort;
+    int  clientBackSock;
 } clientInfo;
 
 #ifdef MAIN_C_

@@ -249,6 +249,35 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			}
 		    xmlFree (param1);
 		}
+	} else if (strcmp((char *)command, "register_clientSocket") == 0){
+		// param1 contains IP Address and param2 contains Port Number
+		strcpy ((char *) xpath, "/xml/param1");
+		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+		if(param1 == NULL){
+		    sprintf (outBuffer, "<xml><error>Value of IP Address not found</error></xml>");
+		    common::SendMessage(cinfo->sock, outBuffer);
+		} else {
+			char log[100];
+			strcpy ((char *) xpath, "/xml/param2");
+			param2 = ClientSet::GetFirstNodeValue(doc, xpath);
+			if(param2 == NULL){
+			    sprintf (outBuffer, "<xml><error>Port Number not found</error></xml>");
+			    common::SendMessage(cinfo->sock, outBuffer);
+			} else {
+				int n = 0;
+				int portNum = -1;
+				n = sscanf ((char *)param2, "%d", &portNum);
+				if (n != 1) {
+					portNum = -1;
+					printf ("Port number is not a proper integer.\n");
+				}
+				cinfo->clientSet->saveClientBackConnectionInfo (cinfo, (char *)param1, portNum);
+                sprintf (outBuffer, "<xml><ok/></xml>");
+                common::SendMessage(cinfo->sock, outBuffer);
+				xmlFree (param2);
+			}
+		    xmlFree (param1);
+		}
 	} else if (strcmp ((char *)command, "create_dataStore") == 0){
 		// param1 contains the name of the new data store and param2 contains XML content of the data store
 		strcpy ((char *) xpath, "/xml/param1");

@@ -11,6 +11,7 @@
 
 #include "common.h"
 #include "OpDataStoreSet.h"
+#include "ClientSet.h"
 
 OpDataStoreSet::OpDataStoreSet() {
 	count = maxNumber = 0;
@@ -61,13 +62,14 @@ OpDataStoreSet::applyXPathOpDataStore (char *commandXML, char *dsname, char **pr
 	// Find the owner of the data store 'dsname'
 	owner = findOwner (dsname);
 	if (owner){
-		// First clean the read buffer of the owner's socket, there might be some left over bytes in there.
-		// Do not want to read junk - Not doing it at this time
-		// while ((n = recv(owner->sock, localBuff, 200, MSG_DONTWAIT )) > 0);
-
-		if (common::SendMessage(owner->sock, commandXML)){
+		if (!owner->clientSet->openBackConnection (owner)){
+			sprintf (*printBuffPtr, "Unable to establish connection with the entity that manages the Operational Data store '%s'", dsname);
+			return false;
+		}
+		if (common::SendMessage(owner->clientBackSock, commandXML)){
 		   // read response from the owner
-		   n = common::ReadSock (owner->sock, printBuffPtr, printBuffSize);
+		   n = common::ReadSock (owner->clientBackSock, printBuffPtr, printBuffSize);
+		   owner->clientSet->closeBackConnection (owner);
 		   if (n){
 			   return true;
 		   } else {

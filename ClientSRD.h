@@ -9,6 +9,7 @@
 #define CLIENTSRD_H_
 
 #include "Client.h"
+#include <libxml/xpathInternals.h>
 
 class Client_SRD: public Client {
 public:

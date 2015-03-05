@@ -33,7 +33,7 @@ OpDataStore.o: OpDataStore.cpp OpDataStore.h
 	$(GCC) -c -g OpDataStore.cpp
 
 OpDataStoreSet.o: OpDataStoreSet.cpp OpDataStoreSet.h
-	$(GCC) -c -g OpDataStoreSet.cpp
+	$(GCC) -I/usr/include/libxml2 -c -g OpDataStoreSet.cpp
 
 clientsrd: mainSRDClient.o srd.o libsrd.a
 	$(GCC) -g -o clientsrd mainSRDClient.o libsrd.a -lxml2

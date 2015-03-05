@@ -795,3 +795,24 @@ srd_applyXPathOpDataStore (int sockfd, char *opDataStoreName, char *xpath, char 
    }
    free (msg);
 }
+
+bool
+srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort)
+{
+	char  msg[100];
+
+	if (myIPAddress == NULL || strlen (myIPAddress) == 0 || strlen(myIPAddress) > 20 || myPort <= 0){
+		printf ("libsrd.a: IP Address and/or Port Number can not be absent or are wrong.");
+		return false;
+	}
+	sprintf (msg, "<xml><command>register_clientSocket</command><param1>%s</param1><param2>%d</param2></xml>", myIPAddress, myPort);
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    return false;
+	}
+	if (!srd_isServerResponseOK (sockfd, NULL)){
+		printf ("libsrd.a: Server response is not OK.\n");
+		return false;
+	}
+	return true;
+}

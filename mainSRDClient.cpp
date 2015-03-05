@@ -15,6 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "srd.h"
 
@@ -72,6 +75,49 @@ opDataStoreHandleXPath (int sockfd, xmlDocPtr ds, xmlChar *xpathExpr)
 	   srd_sendServer (sockfd, contentBuff, n);
    }
    free (contentBuff);
+}
+
+void
+createListeningSocket(int *listenfd, int myPort)
+{
+	int sock;
+	struct sockaddr_in servaddr;
+
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock == -1) {
+	   printf ("Error in creating listening socket.\n");
+	   *listenfd = -1;
+	} else {
+	   bzero(&servaddr, sizeof(servaddr));
+	   servaddr.sin_family = AF_INET;
+	   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	   servaddr.sin_port =  htons(myPort);
+	   if (bind(sock, (struct sockaddr *) &servaddr, sizeof(servaddr))){
+		   printf ("Fatal Error: Could not bind to the server port %d. May be it is in use or in TIME_WAIT state.\n", myPort);
+		   printf ("Use 'netstat -nap | grep %d' command to see its status.\n", myPort);
+		   *listenfd = -1;
+	   } else {
+		   *listenfd = sock;
+	   }
+	}
+}
+
+int
+acceptClients(int listenfd)
+{
+   int iResult;
+   fd_set rfds;
+   int s;
+
+   FD_ZERO(&rfds);
+   FD_SET(listenfd, &rfds);
+   iResult = select(listenfd+1, &rfds, (fd_set *) 0, (fd_set *) 0, NULL); // Last param == NULL means No Timeout
+   if(iResult > 0){
+      s =  accept(listenfd, NULL, NULL);
+      return s;
+   } else{
+      return -1; // error
+   }
 }
 
 int main(int argc, char**argv)
@@ -315,8 +361,9 @@ int main(int argc, char**argv)
    //srd_disconnect (sockfd);
    //exit(0);
 
-   // The following code can be read as it is approximately correct, there is some BUG that is being fixed.
-   /*  Example Code to receive a request from SYSREPOD for Operational Data and respond to it. */
+   /****  Example Code to receive a request from SYSREPOD for Operational Data and respond to it. *****/
+   // The code to illustrate the usage of Operational Data Store is for demonstration pupose only, there is no non-terminating loop
+   // etc. to form a daemon. It just reads one request for Op Data Store and exits. In a real daemon, the code will be quite different.
 
    strcpy (dataStoreName, "op_01"); // assuming that I have one Op Data Store called 'op_01'
    printf ("Waiting for one sample request to apply XPath on one of my Operational Data Stores.....\n");
@@ -329,14 +376,50 @@ int main(int argc, char**argv)
 	   srd_disconnect (sockfd);
 	   exit (0);
    }
+
+   // Need to give a socket to the SysrepoD on which this daemon will be listening on to receive Op Data Store related commands.
+   char myIPAddress[100] = "127.0.0.1";
+   int  myPort = 3510;
+   int  listenfd, connfd;
+
+   if (!srd_registerClientSocket (sockfd, myIPAddress, myPort)){ // register my socket info with SysrepoD
+       printf ("Unable to tell SysrepoD about my listening port.\n");
+       srd_disconnect (sockfd);
+       xmlFreeDoc (myOpDataStore);
+       exit (0);
+   }
+   // Start listening for connection request on 'myPort'
+   createListeningSocket (&listenfd, myPort);
+   if(listenfd != -1){
+	   printf("Listening on Port %d .....\n", myPort);
+       listen(listenfd, SOMAXCONN); // SOMAXCONN defined by socket.h: Max # of clients
+       connfd = acceptClients (listenfd); // No Time out
+       if(connfd > -1){
+          printf("Received a connection request.\n");
+          fflush (stdout);
+       } else {
+          // error
+    	   printf ("Error in accepting a connection.\n");
+          srd_disconnect (sockfd);
+          xmlFreeDoc (myOpDataStore);
+          exit (0);
+       }
+   } else {
+	   printf ("Error in listening for connections.\n");
+	   srd_disconnect (sockfd);
+	   xmlFreeDoc (myOpDataStore);
+	   exit (0);
+   }
    buffPtr = (char *) malloc (buffSize);
    if (buffPtr == NULL){
 	   printf ("Local error: unable to allocate memory.\n");
 	   srd_disconnect (sockfd);
 	   xmlFreeDoc (myOpDataStore);
+	   close (connfd);
+	   close (listenfd);
 	   exit (0);
    }
-   n = srd_recvServer (sockfd, &buffPtr, &buffSize);
+   n = srd_recvServer (connfd, &buffPtr, &buffSize);
    if (n == 0){
    		printf ("Call to read command from server returned 0 - failure\n");
    } else {
@@ -347,51 +430,54 @@ int main(int argc, char**argv)
    	  doc = xmlReadMemory(&(buffPtr[MSGLENFIELDWIDTH + 1]), strlen (&(buffPtr[MSGLENFIELDWIDTH + 1])), "noname.xml", NULL, 0);
       if (doc == NULL){
    			sprintf (sendline, "<xml><error>XML Document not correct</error></xml>");
-   			srd_sendServer (sockfd, sendline, strlen (sendline));
+   			srd_sendServer (connfd, sendline, strlen (sendline));
    	  } else {
    	     strcpy((char *)xpath, "/xml/command");
          command = srd_getFirstNodeValue(doc, (xmlChar *)xpath);
          if (command == NULL){
    			sprintf (sendline, "<xml><error>No command found.</error></xml>");
-   			srd_sendServer(sockfd, sendline, strlen (sendline));
+   			srd_sendServer(connfd, sendline, strlen (sendline));
    	     } else if (strcmp ((char *)command, "apply_xpathOpDataStore") == 0){
-   	    			// param1 contains Op Data Store Name, param2 contains XPath
-   	    			strcpy ((char *) xpath, "/xml/param1");
-   	    			param1 = srd_getFirstNodeValue(doc, (xmlChar *)xpath);
-   	    			if(param1 == NULL){
-   	    			    sprintf (sendline, "<xml><error>Value for Op Data Store name not found</error></xml>");
-   	    			    srd_sendServer(sockfd, sendline, strlen(sendline));
-   	    			} else if (strcmp((char *)param1, dataStoreName) != 0){
-   	    				sprintf (sendline, "<xml><error>Unknown Operational Data Store name: %s</error></xml>", (char *)param1);
-   	    				xmlFree (param1);
-   	    				srd_sendServer (sockfd, sendline, strlen (sendline));
-   	    			} else {
-   	    				char log[100];
-   	    				strcpy ((char *) xpath, "/xml/param2");
-   	    				param2 = srd_getFirstNodeValue(doc, (xmlChar *)xpath);
-   	    				if(param2 == NULL){
-   	    				    sprintf (sendline, "<xml><error>XPath not found</error></xml>");
-   	    				    srd_sendServer(sockfd, sendline, strlen(sendline));
-   	    				} else {
-   	    					// apply xpath and return results back to sysrepod
-   	    					opDataStoreHandleXPath (sockfd, myOpDataStore, param2);
-   	    					xmlFree (param2);
-   	    				}
-   	    			    xmlFree (param1);
-   	    			}
+   	        // param1 contains Op Data Store Name, param2 contains XPath
+   	    	strcpy ((char *) xpath, "/xml/param1");
+   	    	param1 = srd_getFirstNodeValue(doc, (xmlChar *)xpath);
+   	    	if(param1 == NULL){
+   	    		sprintf (sendline, "<xml><error>Value for Op Data Store name not found</error></xml>");
+   	    	    srd_sendServer(connfd, sendline, strlen(sendline));
+   	    	} else if (strcmp((char *)param1, dataStoreName) != 0){
+   	    		sprintf (sendline, "<xml><error>Unknown Operational Data Store name: %s</error></xml>", (char *)param1);
+   	    		xmlFree (param1);
+   	    		srd_sendServer (connfd, sendline, strlen (sendline));
+   	    	} else {
+   	    		char log[100];
+   	    		strcpy ((char *) xpath, "/xml/param2");
+   	    		param2 = srd_getFirstNodeValue(doc, (xmlChar *)xpath);
+   	    		if(param2 == NULL){
+   	    			sprintf (sendline, "<xml><error>XPath not found</error></xml>");
+   	    			srd_sendServer(connfd, sendline, strlen(sendline));
+   	    	    } else {
+   	    		    // apply xpath and return results back to sysrepod
+   	    		    opDataStoreHandleXPath (connfd, myOpDataStore, param2);
+   	    		    xmlFree (param2);
+   	    		}
+   	    	    xmlFree (param1);
+   	    	}
    	    	free (command);
    	     }
          xmlFreeDoc (doc);
    	  }
    }
+   close (connfd);
+   close (listenfd);
    xmlFreeDoc (myOpDataStore);
    free (buffPtr);
    /************  END of Example Code to receive a request from SYSREPOD for Operational Data and respond to it. *******/
 
    /********* END of examples for Operational Data Stores ***************************/
 
-   while (1) sleep (2);
+   printf ("Going to sleep for 20 seconds before exiting.......\n");
    fflush (stdout);
+   sleep (20);
    printf ("About to disconnect from SYSREPOD server\n");
    fflush (stdout);
    srd_disconnect (sockfd); // disconnect this client, leave server running

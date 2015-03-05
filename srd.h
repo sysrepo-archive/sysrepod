@@ -38,5 +38,6 @@ bool srd_listMyUsageOpDataStores (int sockfd, char **result); // Lists which Op 
 int  srd_useOpDataStore (int sockfd, char *name); // Client wants to use an Operational Data Store. Returns 1 on success, 0 on failure.
 int  srd_stopUsingOpDataStore (int sockfd, char *name); // Clients wants to stop using an Operational Data Store. Return 1 on success, 0 on failure.
 void srd_applyXPathOpDataStore (int sockfd, char *opDataStoreName, char *xpath, char **value);// apply XPath on a Operational Data Store, free 'value' after use
+bool srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort);
 
 #endif /* SRD_H_ */
