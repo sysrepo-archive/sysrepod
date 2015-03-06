@@ -1,4 +1,5 @@
 GCC = g++
+Gcc = gcc
 
 all: sysrepod clientsrd opDStoreClient install
 
@@ -36,19 +37,19 @@ OpDataStoreSet.o: OpDataStoreSet.cpp OpDataStoreSet.h
 	$(GCC) -I/usr/include/libxml2 -c -g OpDataStoreSet.cpp
 
 clientsrd: mainSRDClient.o srd.o libsrd.a
-	$(GCC) -g -o clientsrd mainSRDClient.o libsrd.a -lxml2
+	$(Gcc) -g -o clientsrd mainSRDClient.o libsrd.a -lxml2
 
 mainSRDClient.o: mainSRDClient.cpp
-	$(GCC) -I/usr/include/libxml2 -g -c mainSRDClient.cpp
+	$(Gcc) -I/usr/include/libxml2 -g -c mainSRDClient.cpp
 	
 opDStoreClient: mainOpDStoreMgmtClient.o srd.o libsrd.a
-	$(GCC) -g -o opDStoreClient mainOpDStoreMgmtClient.o libsrd.a -lxml2
+	$(Gcc) -g -o opDStoreClient mainOpDStoreMgmtClient.o libsrd.a -lxml2
 	
 mainOpDStoreMgmtClient.o: mainOpDStoreMgmtClient.cpp
-	$(GCC) -I/usr/include/libxml2 -g -c mainOpDStoreMgmtClient.cpp
+	$(Gcc) -I/usr/include/libxml2 -g -c mainOpDStoreMgmtClient.cpp
 	
 srd.o: srd.cpp srd.h
-	$(GCC) -I/usr/include/libxml2 -g -c srd.cpp
+	$(Gcc) -I/usr/include/libxml2 -g -c srd.cpp
 
 libsrd.a: srd.o
 	ar rcs libsrd.a srd.o
