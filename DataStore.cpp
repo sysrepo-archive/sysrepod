@@ -6,6 +6,9 @@
  */
 
 #include <string.h>
+//#include <stdio.h>
+//#include <libxml/parser.h>
+//#include <libxml/tree.h>
 
 #include "common.h"
 #include "DataStore.h"
@@ -340,4 +343,66 @@ DataStore::updateNodes (xmlChar *xpath, xmlChar *newValue, char *log)
 		retValue = -1;
 	}
     return retValue;
+}
+
+int
+DataStore::addNodes (xmlChar *xpath, char *nodeSetXML, char *log)
+{
+	xmlNodePtr parent, newNode;
+	char *newNodesStrWrapped;
+	xmlDocPtr newDoc;
+	xmlXPathObjectPtr objset;
+	xmlNodeSet *nodeSet;
+	int i;
+	xmlNode *cur_node;
+	int count = 0;
+
+	if (xpath == NULL || nodeSetXML == NULL || strlen ((char *)xpath) < 1 || strlen(nodeSetXML) < 1){
+		sprintf (log, "All required parameters are not provided for DataStore::addNodes()");
+		return -1;
+	}
+	newNodesStrWrapped = (char *) malloc (strlen (nodeSetXML) + 20);
+	if (!newNodesStrWrapped){
+		sprintf (log, "Unable to allocate space");
+		return -1;
+	}
+	sprintf (newNodesStrWrapped, "<a>%s</a>", nodeSetXML);
+	newDoc = xmlReadMemory (newNodesStrWrapped, strlen (newNodesStrWrapped), NULL, NULL, 0);
+	free (newNodesStrWrapped);
+	if (!newDoc){
+		sprintf (log, "Failed to make DOM");
+		return -1;
+	}
+	// apply xpath and get nodeset
+	objset =  getNodeSet (xpath, log);
+	if (!objset){
+		xmlFreeDoc (newDoc);
+		return 0;
+	}
+	nodeSet = objset->nodesetval;
+	if (nodeSet == NULL || xmlXPathNodeSetIsEmpty(nodeSet)){
+		return 0;
+	}
+	for (i=0; i < nodeSet->nodeNr; i++) {
+	    cur_node = nodeSet->nodeTab[i];
+	    if (cur_node->type == XML_ELEMENT_NODE) {
+	    	// add new nodes to it
+	    	newNode = xmlDocCopyNode(xmlDocGetRootElement(newDoc), doc, 1);
+	    	if (!newNode){
+	    		continue;
+	    	}
+	    	else {
+	    		xmlNodePtr addedNode = xmlAddChildList (cur_node, newNode->children);
+	    		if (addedNode){
+	    		   count++;
+	    		} else {
+	    			xmlFreeNode (newNode);
+	    		}
+	    	}
+
+	    }
+	}
+	// for testing dump doc
+	// xmlDocDump (stdout, doc);
+	return count;
 }

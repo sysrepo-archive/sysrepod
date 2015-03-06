@@ -223,6 +223,22 @@ int  srd_unlockDataStore (int sockfd);
 int  srd_updateNodes (int sockfd, char *xpath, char *value);
 
 /***********************************************
+ * Function : srd_addNodes
+ *
+ * Description: It adds a subtree to all nodes selected by the given XPath.
+ *
+ * Parameters:
+ * 		sockfd - The socket connected to the server
+ * 		xpath  - The XPath expression to select nodes where the new sub-tree is to be added
+ * 		value  - An XML string representing a set of nodes, e.g. "<street>1 Infinity Loop</street><city>Cupertino</city><state>CA</state>".
+ * 		         There is no need to have a root element.
+ *
+ * Return Value: The number of nodes where the new sub-tree was added. Returns -1 on error.
+ *
+ ************************************************/
+int  srd_addNodes (int sockfd, char *xpath, char *value);
+
+/***********************************************
  * Function : srd_createDataStore
  *
  * Description: It creates a new Data Store at the server.

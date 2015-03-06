@@ -200,6 +200,40 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
         	common::SendMessage(cinfo->sock, &(printBuff[MSGLENFIELDWIDTH + 1]));
         	free (printBuff);
         }
+	} else if (strcmp ((char *)command, "add_nodesDataStore") == 0){
+        // param1 expected to contain XPath to select a set of nodes and param2 will have a set of XML nodes that are
+		// to be put under the nodes selected by XPath.
+		strcpy ((char *) xpath, "/xml/param1");
+		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+		if(param1 == NULL){
+			sprintf (outBuffer, "<xml><error>XPath not found</error></xml>");
+		} else {
+			char  log[100];
+			int   param2BuffSize = 100;
+			char *param2Value = NULL;
+
+			strcpy ((char *) xpath, "/xml/param2/*");
+			// value of param2 is a node set, not a string like in other cases
+			param2Value = (char *) malloc (param2BuffSize + 1);
+			if (param2Value == NULL){
+				sprintf (outBuffer, "<xml><error>Unable to allocate space to extract value of param2</error></xml>");
+			} else {
+			    if (!applyXPath(doc, xpath, &param2Value, param2BuffSize)){
+				   sprintf (outBuffer, "<xml><error>Unable to find param2 value</error></xml>");
+			    } else if (cinfo->dataStore == NULL){
+			   	   sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+			    } else {
+			   	   if ((n = (cinfo->dataStore->addNodes (param1, param2Value, log))) < 0){
+			   			sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
+			   	   } else {
+			   			sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+				   }
+				}
+			    free (param2Value);
+			}
+			xmlFree (param1);
+		}
+		common::SendMessage(cinfo->sock, outBuffer);
 	} else if (strcmp ((char *)command, "lock_dataStore") == 0){
 		if (cinfo->dataStore == NULL){
 			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");

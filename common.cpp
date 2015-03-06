@@ -256,6 +256,7 @@ bool common::SendMessage (int sock, char *message)
 
 	sprintf (fmt, "%%.%dd ", MSGLENFIELDWIDTH);
 	sprintf (msgSizeStr, fmt, msgSize);
+	printf ("Message SENT on Socket %d is : %s%s\n", sock, msgSizeStr, message);
 	toSend = MSGLENFIELDWIDTH + 1;
 	// send size str
 	while (sent < toSend){

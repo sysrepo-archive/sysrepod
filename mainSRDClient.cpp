@@ -165,7 +165,7 @@ int main(int argc, char**argv)
 	   printf ("Result of XPATH is: %s\n", value);
 	   free (value);
    } else {
-	   printf ("Result of XPATH not found.\n");
+	   printf ("Result of XPATH not found OR is NULL.\n");
    }
    // Example of getting the name node of the first interface
    strcpy (xpath, "/hosts/host/interfaces/interface[1]/name");
@@ -175,7 +175,7 @@ int main(int argc, char**argv)
         printf ("Result of XPATH is: %s\n", value);
         free (value);
    } else {
-        printf ("Result of XPATH not found.\n");
+        printf ("Result of XPATH not found OR is NULL.\n");
    }
    // Example of extracting the atomic value of a single node
    strcpy (xpath, "/hosts/host/interfaces/interface[1]/name/text()");
@@ -185,7 +185,7 @@ int main(int argc, char**argv)
         printf ("Result of XPATH is: %s\n", value);
         free (value);
    } else {
-        printf ("Result of XPATH not found.\n");
+        printf ("Result of XPATH not found OR is NULL.\n");
    }
    // Example of extracting multiple atomic values, values will be separated by '; '
    strcpy (xpath, "/hosts/host/interfaces/interface/name/text()");
@@ -195,7 +195,7 @@ int main(int argc, char**argv)
         printf ("Result of XPATH is: %s\n", value);
         free (value);
    } else {
-        printf ("Result of XPATH not found.\n");
+        printf ("Result of XPATH not found OR is NULL.\n");
    }
 
    // Find the count of 'interface' nodes and print their names
@@ -204,7 +204,7 @@ int main(int argc, char**argv)
     srd_applyXPath (sockfd, xpath, &value);
     if (value){
  	   int num, i;
-        printf ("The count of interface nodes is: %s\n", value);
+        printf ("The count of <interface> nodes is: %s\n", value);
         num = atoi (value);
         free (value);
         for (i=1; i <= num; i++){
@@ -218,7 +218,7 @@ int main(int argc, char**argv)
      	   }
         }
     } else {
-       	   printf ("Result of XPATH not found.\n");
+       	   printf ("Result of XPATH not found OR is NULL.\n");
     }
 
    // change the name of the first interface to 'new_eth0'
@@ -237,7 +237,25 @@ int main(int argc, char**argv)
    	   printf ("Result of XPATH is: %s\n", value);
    	   free (value);
    } else {
-   	   printf ("Result of XPATH not found.\n");
+   	   printf ("Result of XPATH not found OR is NULL.\n");
+   }
+
+   // Add a new sub-tree to all <interface> nodes
+   strcpy (xpath, "/hosts/host/interfaces/*");
+   strcpy (newValue, "<street>1 Infinity Loop</street><city>Cupertino</city><state>CA</state>");
+   if ((n=srd_addNodes (sockfd, xpath, newValue)) < 0){
+	   printf ("Error in adding a subtree to the nodes selected by XPath %s\n", xpath);
+   } else {
+	   printf ("Added new subtree formed using the XML:\n%s\nto %d number of nodes selected using XPath %s\n", newValue, n, xpath );
+	   // printf the contents of the Data Store again to show the new content
+	   strcpy (xpath, "/*");
+	   srd_applyXPath (sockfd, xpath, &value);
+	   if (value){
+	      printf ("Updated Tree content is: \n%s\n", value);
+	      free (value);
+	   } else {
+	      printf ("Result of XPATH not found.\n");
+	   }
    }
 
    // create a new data store and retrieve its contents
@@ -251,7 +269,7 @@ int main(int argc, char**argv)
 	   srd_setDataStore (sockfd, dataStoreName);
 	   srd_applyXPath (sockfd, xpath, &value);
 	   if (value){
-		   printf ("The contents of the new data store are: %s\n", value);
+		   printf ("The contents of the new data store are: \n%s\n", value);
 		   free (value);
 	   } else {
 		   printf ("Unable to get the contents of the new data store: %s.\n", dataStoreName);
@@ -273,7 +291,7 @@ int main(int argc, char**argv)
    } else if (n == 0){
 	   printf ("Data Store %s not found\n", dataStoreName);
    } else {
-	   printf ("Error in deleting the Data Store '%s' as it is in use.\n", dataStoreName);
+	   printf ("Unable to delete the Data Store '%s' as it is in use.\n", dataStoreName);
    }
    // Try to delete 'configure' data store again after setting a different data store for this client so that
    // the data store 'configure' is not in use.
@@ -281,14 +299,13 @@ int main(int argc, char**argv)
    srd_setDataStore (sockfd, dataStoreName);
    // It is also possible to set the Data Store for a client to be NULL
    srd_setDataStore (sockfd, NULL);
-   strcpy (dataStoreName, " ");
-   srd_setDataStore (sockfd, dataStoreName);
+
    strcpy (dataStoreName, "configure");
    srd_deleteDataStore (sockfd, dataStoreName);
 
    // Print the list of data stores again
    if (srd_listDataStores (sockfd, &dsList)){
-   	   if (dsList) printf ("Data Store list is: %s\n", dsList);
+   	   if (dsList) printf ("Data Store list is: %s after deleting 'configure' data store\n", dsList);
    	   else        printf ("Data Store list is empty.\n");
    } else {
    	   printf ("Error in getting list of data stores.\n");
@@ -357,12 +374,8 @@ int main(int argc, char**argv)
    	  printf ("Failed to get the list of Operational Data Stores\n");
    }
 
-   //Due to bug in the last section: EXIT NOW.
-   //srd_disconnect (sockfd);
-   //exit(0);
-
    /****  Example Code to receive a request from SYSREPOD for Operational Data and respond to it. *****/
-   // The code to illustrate the usage of Operational Data Store is for demonstration pupose only, there is no non-terminating loop
+   // The code to illustrate the usage of Operational Data Store is for demonstration purpose only, there is no non-terminating loop
    // etc. to form a daemon. It just reads one request for Op Data Store and exits. In a real daemon, the code will be quite different.
 
    strcpy (dataStoreName, "op_01"); // assuming that I have one Op Data Store called 'op_01'
@@ -484,4 +497,3 @@ int main(int argc, char**argv)
    // srd_terminateServer (sockfd); // terminate server and disconnect this client
    exit (0);
 }
-

@@ -33,6 +33,7 @@ srd_sendServer (int sockfd, char *message, int msgSize)
    sprintf (fmt, "%%.%dd ", MSGLENFIELDWIDTH);
    sprintf (msgSizeStr, fmt, msgSize);
    toSend = MSGLENFIELDWIDTH + 1;
+   printf ("libsrd.a: About to send the following message to server >>>>>>>\n%s%s\n", msgSizeStr, message);
    // send size str
    while (sent < MSGLENFIELDWIDTH+1){
        n = send (sockfd, &(msgSizeStr[sent]), toSend, 0);
@@ -407,7 +408,7 @@ srd_isServerResponseOK(int sockfd, char **OKcontent)
 		if(buffPtr) free (buffPtr);
 		return 0;
 	}
-    printf("libsrd.a: Response from server is:\n %s\n", buffPtr);
+    printf("libsrd.a: Response from server is: <<<<<<\n %s\n", buffPtr);
 	doc = xmlReadMemory(&(buffPtr[MSGLENFIELDWIDTH + 1]), ret, "noname.xml", NULL, 0);
 	if (buffPtr){
 		free (buffPtr);
@@ -815,4 +816,56 @@ srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort)
 		return false;
 	}
 	return true;
+}
+
+int
+srd_addNodes (int sockfd, char *xpath, char *value)
+{
+	char *msg = NULL;
+	char *result = NULL;
+	int  retValue = -1;
+	int  n, intValue;
+
+	if (value == NULL || strlen (value) < 1) {
+		  printf ("libsrd.a: No new value provided for the new nodes to be added.\n");
+		  return -1;
+	}
+	if (xpath == NULL){
+	   	  printf ("libsrd.a: XPath can not be NULL.\n");
+	   	  return -1;
+	}
+	if (strlen (xpath) < 1){
+	   	  printf ("linsrd.a: XPath content is missing.\n");
+	   	  return -1;
+	}
+	msg = (char *)malloc (strlen(xpath) + strlen (value) + 100);
+	if (!msg){
+		   printf ("libsrd.a: Unable to allocate space.\n");
+		   return -1;
+	}
+	sprintf (msg, "<xml><command>add_nodesDataStore</command><param1>%s</param1><param2>%s</param2></xml>", xpath, value);
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+		   printf ("libsrd.a: Error in sending msg: %s\n", msg);
+		   free (msg);
+		   return -1;
+	}
+	if (!srd_isServerResponseOK (sockfd, &result)){
+		   printf ("libsrd.a: Server response to apply XPATH on Operational Data Store is not OK.\n");
+	} else {
+		   if (result) {
+		   		n = sscanf (result, "%d", &intValue);
+		   		if (n == 0) {
+		   			   retValue = 0;
+		   			   printf ("libsrd.a: Unable to read how many nodes were changed. Unpredictable modificatons done in data store.\n");
+		   		} else {
+		   			   retValue = intValue;
+		   		}
+		   	} else {
+		   		retValue = 0;
+		        printf ("libsrd.a: Unable to read how many nodes were changed. Unpredictable modificatons done in data store.\n");
+		   	}
+	}
+	if (result) free (result);
+	free (msg);
+	return retValue;
 }

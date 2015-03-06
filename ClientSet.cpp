@@ -294,7 +294,7 @@ ClientSet::ProcessMessage (
     if ((MSGLENFIELDWIDTH + 1 + *msgSize)> *numBytesRead) return 0; // need more bytes
     // complete message read
     (*recvline)[*numBytesRead] = '\0';
-    printf ("Message received is : %s \n", *recvline);
+    printf ("Message received on Socket %d is : %s \n",cinfo->sock,  *recvline);
     if (cinfo->client == NULL){ // do not know what protocol client is going to use
     	ret = cinfo->clientSet->processFirstMessage (cinfo, &((*recvline)[MSGLENFIELDWIDTH + 1]), sendline, outBuffSize); // First message could be Prototcol or Exit
     } else {

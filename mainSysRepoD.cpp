@@ -126,6 +126,7 @@ applySettings(int argc, char **argv)
 
 	applyDefaultSettings();
 	if (argc < 2) {
+		printf ("No parameter file specified. Using default parameter values.\n");
 		createDataStoreSet ();
 		createOpDataStoreSet();
 		return;
@@ -136,6 +137,8 @@ applySettings(int argc, char **argv)
 			fprintf (stderr, "FATAL ERROR: Could not read the parameter file : %s.\n", argv[1]);
 			exit (1);
 	}
+	printf ("Using the parameter file '%s'\n", argv[1]);
+
 	while (true){
 		if((ret = fgets(line, PATHLEN*4+1, paramFile)) == NULL) break;
 		count++;
