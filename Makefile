@@ -39,17 +39,17 @@ OpDataStoreSet.o: OpDataStoreSet.cpp OpDataStoreSet.h
 clientsrd: mainSRDClient.o srd.o libsrd.a
 	$(Gcc) -g -o clientsrd mainSRDClient.o libsrd.a -lxml2
 
-mainSRDClient.o: mainSRDClient.cpp
-	$(Gcc) -I/usr/include/libxml2 -g -c mainSRDClient.cpp
+mainSRDClient.o: mainSRDClient.c
+	$(Gcc) -I/usr/include/libxml2 -g -c mainSRDClient.c
 	
 opDStoreClient: mainOpDStoreMgmtClient.o srd.o libsrd.a
 	$(Gcc) -g -o opDStoreClient mainOpDStoreMgmtClient.o libsrd.a -lxml2
 	
-mainOpDStoreMgmtClient.o: mainOpDStoreMgmtClient.cpp
-	$(Gcc) -I/usr/include/libxml2 -g -c mainOpDStoreMgmtClient.cpp
+mainOpDStoreMgmtClient.o: mainOpDStoreMgmtClient.c
+	$(Gcc) -I/usr/include/libxml2 -g -c mainOpDStoreMgmtClient.c
 	
-srd.o: srd.cpp srd.h
-	$(Gcc) -I/usr/include/libxml2 -g -c srd.cpp
+srd.o: srd.c srd.h
+	$(Gcc) -I/usr/include/libxml2 -g -c srd.c
 
 libsrd.a: srd.o
 	ar rcs libsrd.a srd.o

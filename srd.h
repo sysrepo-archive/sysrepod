@@ -24,6 +24,9 @@
 #define SRD_H_
 
 #include <libxml/xpathInternals.h>
+#define bool int
+#define true 1
+#define false 0
 
 /***********************************************
  * Function : srd_getNodeSet
