@@ -23,7 +23,7 @@ public:
 	bool initialize (int number);
 	bool applyXPathOpDataStore (char *commandXML, char *dsname, char **printBuff, int printBuffSize);
 	clientInfo *findOwner (char *dsname);
-	bool addOpDataStore (char *name);
+	int  addOpDataStore (char *name);
 	char *getList (void);
 	char *listMyUsage (clientInfo *cinfo);
 	bool  deleteOpDataStore (char *name, clientInfo *cinfo);

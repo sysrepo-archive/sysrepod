@@ -130,7 +130,7 @@ int main(int argc, char**argv)
    char *serverIP;
    int  toread, readSoFar;
    int  msgSize, totalMsgSize;
-   int serverPort = 3500;
+   int serverPort = SRD_DEFAULTSERVERPORT;
    char dataStoreName [100] = "runtime";
    char xpath[100];
    char *value;

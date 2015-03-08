@@ -111,10 +111,13 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
            sprintf (outBuffer, "<xml><error>Op Data Store name missing</error></xml>");
 		   common::SendMessage(cinfo->sock, outBuffer);
         } else {
-           if(!OpDataStores->addOpDataStore ((char *)param1)){
-        	  sprintf (outBuffer, "<xml><error>Either Op Data Store not added</error></xml>");
-           } else {
+           n = OpDataStores->addOpDataStore ((char *)param1);
+           if (n == 0){
+        	  sprintf (outBuffer, "<xml><error>Op Data Store not added</error></xml>");
+           } else if (n == 1){
               sprintf (outBuffer, "<xml><ok/></xml>");
+           } else if (n == 2){
+        	   sprintf (outBuffer, "<xml><ok>Op Data Store already exists - no action</ok></xml>");
            }
            common::SendMessage(cinfo->sock, outBuffer);
            xmlFree (param1);

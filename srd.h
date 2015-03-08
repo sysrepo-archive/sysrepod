@@ -28,6 +28,8 @@
 #define true 1
 #define false 0
 
+#define SRD_DEFAULTSERVERPORT 3500
+
 /***********************************************
  * Function : srd_getNodeSet
  *

@@ -105,22 +105,22 @@ OpDataStoreSet::findOwner (char *dsname)
 	return NULL;
 }
 
-bool
+int
 OpDataStoreSet:: addOpDataStore (char *name)
 {
 	if(pthread_mutex_lock(&dsMutex)){
 		printf ("Unable to lock op data store set.\n");
-		return false;
+		return 0;
 	}
 	if (count == maxNumber) {
 		printf ("Limit of %d op data stores reached. Can not add more op data stores.\n", maxNumber);
 		pthread_mutex_unlock(&dsMutex);
-		return false;
+		return 0;
 	}
 	if(getOpDataStore_noLock(name)){
 		printf ("Duplicate Op Data Store Names are not allowed: %s\n", name);
 		pthread_mutex_unlock(&dsMutex);
-		return false;
+		return 2;
 	}
     opDataStoreList[count] = new OpDataStore();
     if (opDataStoreList[count] == NULL || !opDataStoreList[count]->initialize(name)){
@@ -128,11 +128,11 @@ OpDataStoreSet:: addOpDataStore (char *name)
     	opDataStoreList[count] = NULL;
     	printf ("Error in creating a new op data store: %s\n", name);
     	pthread_mutex_unlock(&dsMutex);
-    	return false;
+    	return 0;
     }
     count++;
     pthread_mutex_unlock(&dsMutex);
-    return true;
+    return 1;
 }
 
 OpDataStore *

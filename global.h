@@ -36,7 +36,7 @@
 
 #define INVALID_SOCK -1
 
-#define MAXOPDATASTORENAMELEN 201
+#define MAXOPDATASTORENAMELEN 1025
 
 #include "application.h"
 
