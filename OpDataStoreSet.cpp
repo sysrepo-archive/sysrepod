@@ -58,7 +58,20 @@ OpDataStoreSet::applyXPathOpDataStore (char *commandXML, char *dsname, char **pr
 	clientInfo *owner;
 	int n;
 	char localBuff[200];
+	char *newBuffer;
+	int   buffSize = printBuffSize;
 
+	if ((strlen (dsname) + 201) > buffSize){
+		// The buffer size is too small to even print the error messages in this routine
+		newBuffer = (char *)realloc (*printBuffPtr, strlen(dsname) + 201);
+		if (newBuffer == NULL){
+			sprintf (*printBuffPtr, "Unable to allocate space.");
+			return false;
+		} else {
+			*printBuffPtr = newBuffer;
+			buffSize = strlen(dsname) + 201;
+		}
+	}
 	// Find the owner of the data store 'dsname'
 	owner = findOwner (dsname);
 	if (owner){
@@ -68,7 +81,7 @@ OpDataStoreSet::applyXPathOpDataStore (char *commandXML, char *dsname, char **pr
 		}
 		if (common::SendMessage(owner->clientBackSock, commandXML)){
 		   // read response from the owner
-		   n = common::ReadSock (owner->clientBackSock, printBuffPtr, printBuffSize);
+		   n = common::ReadSock (owner->clientBackSock, printBuffPtr, buffSize);
 		   owner->clientSet->closeBackConnection (owner);
 		   if (n){
 			   return true;
@@ -186,7 +199,7 @@ char *
 OpDataStoreSet::listMyUsage (clientInfo *cinfo)
 {
 	int i;
-	char *list;
+	char *list = NULL;
 	int requiredSize = 0;
 
 	if(pthread_mutex_lock(&dsMutex)){
@@ -284,7 +297,7 @@ int
 OpDataStoreSet::removeOwner (clientInfo *cinfo)
 {
 	int i;
-	int count = 0;
+	int localcount = 0;
 	if(pthread_mutex_lock(&dsMutex)){
 		printf ("Unable to lock data store set.\n");
 		return -1;
@@ -292,11 +305,11 @@ OpDataStoreSet::removeOwner (clientInfo *cinfo)
 	for (i=0; i < count; i++){
 		if (opDataStoreList[i]->owner == cinfo){
 			  opDataStoreList[i]->owner = NULL;
-			  count++;
+			  localcount++;
 		}
 	}
 	pthread_mutex_unlock(&dsMutex);
-	return count;
+	return localcount;
 }
 
 bool

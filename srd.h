@@ -415,4 +415,20 @@ void srd_applyXPathOpDataStore (int sockfd, char *opDataStoreName, char *xpath, 
  ************************************************/
 bool srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort);
 
+/***********************************************
+ * Function : srd_DOMHandleXPath
+ *
+ * Description: It computes the result of applying the given XPath on the given DOM tree. It serializes the results in the form
+ * of an XML string and sends the result on the given socket.
+ *
+ * Parameters:
+ * 		sockfd      - The socket connected to the server
+ * 		doc         - DOM Tree on which the XPath is to be applied
+ * 		xpathExpr   - The XPath expression to be applied on the given DOM Tree
+ *
+ * Return Value: void
+ *
+ ************************************************/
+void srd_DOMHandleXPath (int sockfd, xmlDocPtr ds, xmlChar *xpathExpr);
+
 #endif /* SRD_H_ */

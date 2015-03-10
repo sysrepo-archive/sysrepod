@@ -312,6 +312,8 @@ int common::ReadSock (int sockfd, char **buffPtr, int orgBuffSize)
 	    	}
 	    	*buffPtr = newBuffer;
 	        buffSize = MSGLENFIELDWIDTH + 1 + msgSize;
+	    } else {
+	    	buffSize = orgBuffSize;
 	    }
 	}
 	while ((MSGLENFIELDWIDTH + 1 + msgSize) > numBytesRead){

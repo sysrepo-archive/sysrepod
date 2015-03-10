@@ -63,7 +63,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
                if (cinfo->dataStore){
                   sprintf (outBuffer, "<xml><ok/></xml>");
                } else {
-            	   sprintf (outBuffer, "<xml><error>Data Store '%s' not found</error></xml>", param1);
+            	   sprintf (outBuffer, "<xml><error>Data Store not found</error></xml>");
                }
                common::SendMessage(cinfo->sock, outBuffer);
                xmlFree (param1);
@@ -333,8 +333,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				common::SendMessage (cinfo->sock, outBuffer);
 			} else {
 				if (!applyXPath (doc, xpath, (char **)&param2, param2InitialSize)){
-					sprintf (outBuffer, "<xml><error>%s: XML Tree for Data Store missing</error></xml>", param2);
-					free (param2);
+					sprintf (outBuffer, "<xml><error>XML Tree for Data Store missing</error></xml>");
 					common::SendMessage(cinfo->sock, outBuffer);
 				} else {
 				    if (!DataStores->addDataStoreFromString ((char *)param1, (char *)param2)){
@@ -351,48 +350,72 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		}
 	} else if (strcmp ((char *)command, "list_dataStores") == 0){
 		char *list = NULL;
-		char *msg;
+		char *msg = NULL;
+		char  localBuff[100];
 		list = DataStores->getList ();
 		if (list && strlen (list) > 0){
 			msg = (char *)malloc (strlen(list) + 100);
-			sprintf (msg, "<xml><ok>%s</ok></xml>", list);
+			if (!msg){
+				sprintf (localBuff, "<xml><error>Unable to allocate space</error></xml>");
+			} else {
+			    sprintf (msg, "<xml><ok>%s</ok></xml>", list);
+			}
 		} else {
 			// list is empty
-			msg = (char *)malloc (100);
-			sprintf (msg, "<xml><ok><dataStores></dataStores></ok></xml>");
+			    sprintf (localBuff, "<xml><ok><dataStores></dataStores></ok></xml>");
 		}
-        common::SendMessage(cinfo->sock, msg);
-        free (msg);
+		if (msg){
+            common::SendMessage(cinfo->sock, msg);
+            free (msg);
+		} else {
+			common::SendMessage(cinfo->sock, localBuff);
+		}
         if (list) free (list);
 	} else if (strcmp ((char *)command, "list_opDataStores") == 0){
 		char *list = NULL;
-		char *msg;
+		char *msg = NULL;
+		char  localBuff[100];
 		list = OpDataStores->getList ();
 		if (list && strlen (list) > 0){
 			msg = (char *)malloc (strlen(list) + 100);
-			sprintf (msg, "<xml><ok>%s</ok></xml>", list);
+			if (!msg){
+				sprintf (localBuff, "<xml><error>Unable to allocate space</error></xml>");
+			} else {
+			    sprintf (msg, "<xml><ok>%s</ok></xml>", list);
+			}
 		} else {
 			// list is empty
-			msg = (char *)malloc (100);
-			sprintf (msg, "<xml><ok><opDataStores></opDataStores></ok></xml>");
+			sprintf (localBuff, "<xml><ok><opDataStores></opDataStores></ok></xml>");
 		}
-        common::SendMessage(cinfo->sock, msg);
-        free (msg);
+		if (msg){
+            common::SendMessage(cinfo->sock, msg);
+            free (msg);
+		} else {
+			common::SendMessage(cinfo->sock, localBuff);
+		}
         if (list) free (list);
 	} else if (strcmp((char *)command, "list_myUsageOpDataStores") == 0){
 		char *list = NULL;
-		char *msg;
+		char *msg = NULL;
+		char  localBuff[100];
 		list = OpDataStores->listMyUsage (cinfo);
 		if (list && strlen (list) > 0){
 			msg = (char *)malloc (strlen(list) + 100);
-			sprintf (msg, "<xml><ok>%s</ok></xml>", list);
+			if (!msg){
+				sprintf (localBuff, "<xml><error>Unable to allocate space</error></xml>");
+			} else {
+			    sprintf (msg, "<xml><ok>%s</ok></xml>", list);
+			}
 		} else {
 			// list is empty
-			msg = (char *)malloc (100);
-			sprintf (msg, "<xml><ok><opDataStores></opDataStores></ok></xml>");
+			sprintf (localBuff, "<xml><ok><opDataStores></opDataStores></ok></xml>");
 		}
-        common::SendMessage(cinfo->sock, msg);
-        free (msg);
+		if (msg){
+            common::SendMessage(cinfo->sock, msg);
+            free (msg);
+		} else {
+			common::SendMessage(cinfo->sock, localBuff);
+		}
         if (list) free (list);
 	} else if (strcmp((char *)command, "delete_dataStore") == 0){
 		int n;
@@ -404,7 +427,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
            if ((n = DataStores->deleteDataStore (cinfo->clientSet, (char *)param1)) >=0){
               sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
            } else {
-        	   sprintf (outBuffer, "<xml><error>Error in deleting Data Store %s</error></xml>", param1);
+        	   sprintf (outBuffer, "<xml><error>Error in deleting Data Store</error></xml>");
            }
         }
         common::SendMessage(cinfo->sock, outBuffer);
@@ -419,7 +442,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			common::SendMessage(cinfo->sock, outBuffer);
 			sleep (3); // Do not want to kill socket too quickly, otherwise client will not be able to read response
 	} else {
-			sprintf (outBuffer, "<xml><error>Command not supported: %s</error></xml>", (char *) command);
+			sprintf (outBuffer, "<xml><error>Command not supported</error></xml>");
 			common::SendMessage(cinfo->sock, outBuffer);
 	}
 	xmlFree (command);

@@ -226,7 +226,12 @@ ClientSet:: processFirstMessage (struct clientInfo *cinfo, char *command, char *
 			sprintf (outBuffer, "<xml><ok/></xml>");
 			common::SendMessage(cinfo->sock, outBuffer);
 		}else {
-			sprintf (outBuffer, "<xml><error>This protocol not supported: %s</error>", (char *) proto);
+			if ((strlen((char *)proto) + 50) > outBuffSize){
+				// buffer is too small, just print a short message
+				sprintf (outBuffer, "<xml><error>This protocol not supported</error>");
+			} else {
+			    sprintf (outBuffer, "<xml><error>This protocol not supported: %s</error>", (char *) proto);
+			}
 			common::SendMessage(cinfo->sock, outBuffer);
 		}
 		xmlFree (proto);

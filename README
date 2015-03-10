@@ -35,4 +35,27 @@
 	$(GCC) -g -o client mainSRDClient.o libsrd.a -lxml2
 	
 	A DESCRPTION OF THE API's IS GIVEN IN 'srd.h'
+	
+11) AN EXAMPLE of running TWO Daemons (south-side clients) with two separate Operational Data Stores specified
+    using Name Spaces and ONE North-side Management Client sending XPath expression for the two Operational
+    Data Stores. Execute the following commands:
+    
+    a) Open an XTerm window in the code directory and execute:
+       cd server
+       ./sysrepod param
+    b) Open another XTerm window in the code directory and execute:
+       cd client_SRD
+       ./opDStoreSubTree1
+    c) Open another XTerm window in the code directory and execute:
+       cd client_SRD
+       ./opDStoreSubTree2
+       
+       b) and c) starr two Daemons that register two Operational Data Stores
+       Now let us start a north-side client to send XPATH to these two Daemons
+    d) Open another XTerm window in the code directory and execute:
+       cd client_SRD
+       ./opDStoreGetSubTree
+       
+       You will see the results of XPath in this XTerm window.
+       
 

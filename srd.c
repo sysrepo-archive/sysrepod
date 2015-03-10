@@ -183,6 +183,68 @@ srd_printElementSet (xmlDocPtr doc, xmlNodeSet *nodeSet, char **printBuffPtr, in
 
 }
 
+int
+printXPathAtomic (xmlXPathObjectPtr objset, char **printBuffPtr, int printBuffSize)
+{
+	int retValue;
+	char *res = NULL;
+	int size = printBuffSize;
+	char *newSpace;
+	int n;
+
+	if (objset == NULL) return -1;
+	switch (objset->type){
+	case XPATH_STRING:
+        res = strdup ((char *)objset->stringval);
+        break;
+    case XPATH_BOOLEAN:
+        res = (char *)xmlXPathCastBooleanToString(objset->boolval);
+        break;
+    case XPATH_NUMBER:
+        res = (char *) xmlXPathCastNumberToString(objset->floatval);
+        break;
+	}
+	if (res == NULL || strlen (res) == 0){
+		if (res) free (res);
+		return 0;
+	}
+	if (size < (strlen(res) + 1)){
+	    size = strlen(res) + 1;
+	    newSpace = (char *)realloc (*printBuffPtr, size);
+	    if (newSpace){
+	        *printBuffPtr = newSpace;
+	    } else {
+	        // unable to allocate space
+	        if (res) free (res);
+	        return -1;
+	    }
+	}
+	n = sprintf (*printBuffPtr, "%s", res);
+	if (res) free (res);
+	return n;
+}
+
+int
+printXPathAtomicResult (xmlXPathObjectPtr objset, char **printBuffPtr, int printBuffSize)
+{
+	int retValue;
+
+	if (!objset){
+	    // no value
+		retValue = 0;
+        strcpy (*printBuffPtr, "");
+	} else if(objset->type == XPATH_STRING || objset->type == XPATH_NUMBER || objset->type == XPATH_BOOLEAN){
+		// put the text form of XPATH result in *printBuffPtr
+		retValue = printXPathAtomic (objset, printBuffPtr, printBuffSize);
+		if (retValue < 0){
+			// error
+			sprintf (*printBuffPtr, "<xml><error>Unable to print XPath result</error></xml>");
+		}
+    } else if (objset->type == XPATH_UNDEFINED){
+    	retValue = sprintf (*printBuffPtr, "XPATH STRING: undefined");
+    }
+	return retValue;
+}
 
 // END local functions
 
@@ -226,13 +288,21 @@ srd_connect (char *serverIP, int serverPort, int *sockfd)
 int
 srd_setDataStore (int sockfd, char *dsname)
 {
-   char *msg;
+   char *msg = NULL;
 
    if (dsname && strlen(dsname) > 0){
 	  msg = (char *)malloc (strlen(dsname) + 100);
+	  if (!msg){
+		  printf ("libsrd.a: Unable to allocate space.\n");
+		  return 0;
+	  }
       sprintf (msg, "<xml><command>set_dataStore</command><param1>%s</param1></xml>", dsname);
    } else {
 	   msg = (char *)malloc (100);
+	   if (!msg){
+		   printf ("libsrd.a: Unable to allocate space.\n");
+		   return 0;
+	   }
 	   sprintf (msg, "<xml><command>set_dataStore</command><param1></param1></xml>");
    }
    if (!srd_sendServer (sockfd, msg, strlen(msg))){
@@ -868,4 +938,62 @@ srd_addNodes (int sockfd, char *xpath, char *value)
 	if (result) free (result);
 	free (msg);
 	return retValue;
+}
+
+void
+srd_DOMHandleXPath (int sockfd, xmlDocPtr ds, xmlChar *xpathExpr)
+{
+	char *contentBuff = NULL;
+	int   contentBuffSize = 100;
+	int len = 0;
+	char sendline[100];
+	xmlXPathObjectPtr xpathObj_local;
+	xmlNodeSetPtr nodes_local;
+	char log[200];
+
+	contentBuff = (char *)malloc (contentBuffSize);
+	if (!contentBuff){
+	    printf ("Unable to allocate buffer to apply xpath.\n");
+	    sprintf (sendline, "<xml><error>Error in memory allocation</error></xml>");
+	    srd_sendServer(sockfd, sendline, strlen(sendline));
+	    return;
+	}
+	xpathObj_local = srd_getNodeSet (ds, (xmlChar *) xpathExpr, log);
+	if (xpathObj_local != NULL){
+		if (xpathObj_local->type == XPATH_NODESET || xpathObj_local->type == XPATH_XSLT_TREE){
+	        nodes_local = xpathObj_local->nodesetval;
+	        if (nodes_local->nodeNr > 0){
+	    	    len = srd_printElementSet (ds, nodes_local, &contentBuff, contentBuffSize);
+	        }
+		}else {
+			len = printXPathAtomicResult(xpathObj_local, &contentBuff, contentBuffSize);
+		}
+	    if (len < 0){
+	    		printf ("Unable to read XPath result.\n");
+	    		sprintf (sendline, "<xml><error>Unable to read XPath result</error></xml>");
+	    		srd_sendServer(sockfd, sendline, strlen(sendline));
+	    } else if (len == 0){
+	    		int n;
+	    	    n = sprintf (contentBuff, "<xml><ok/></xml>");
+	    		srd_sendServer (sockfd, contentBuff, n);
+	    } else {
+	    		// send the XPath result to server
+	    		char *msg;
+	    		msg = (char *) malloc (strlen(contentBuff) + strlen ("<xml><ok></ok></xml>") + 2);
+	    		if (msg == NULL){
+	    			sprintf (sendline, "<xml><error>Error in memory allocation</error></xml>");
+	    		    srd_sendServer(sockfd, sendline, strlen(sendline));
+	    		} else {
+	    			sprintf (msg, "<xml><ok>%s</ok></xml>", contentBuff);
+	    			srd_sendServer (sockfd, msg, strlen (msg));
+	    			free (msg);
+	    		}
+	    }
+	    xmlXPathFreeObject (xpathObj_local);
+   } else {
+	   int n;
+	   n =sprintf (contentBuff, "<xml><ok/></xml>");
+	   srd_sendServer (sockfd, contentBuff, n);
+   }
+   free (contentBuff);
 }
