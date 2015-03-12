@@ -244,6 +244,20 @@ int  srd_updateNodes (int sockfd, char *xpath, char *value);
 int  srd_addNodes (int sockfd, char *xpath, char *value);
 
 /***********************************************
+ * Function : srd_deleteNodes
+ *
+ * Description: It deletes subtrees selected by the given XPath.
+ *
+ * Parameters:
+ * 		sockfd - The socket connected to the server
+ * 		xpath  - The XPath expression to select nodes to be deleted
+ *
+ * Return Value: The number of nodes deleted. Returns -1 on error.
+ *
+ ************************************************/
+int srd_deleteNodes (int sockfd, char *xpath);
+
+/***********************************************
  * Function : srd_createDataStore
  *
  * Description: It creates a new Data Store at the server.

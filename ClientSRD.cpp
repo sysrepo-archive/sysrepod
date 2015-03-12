@@ -237,6 +237,22 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			xmlFree (param1);
 		}
 		common::SendMessage(cinfo->sock, outBuffer);
+	} else if (strcmp ((char *)command, "delete_nodesDataStore") == 0){
+	        // param1 expected to contain XPath to select a set of nodes to be deleted
+			strcpy ((char *) xpath, "/xml/param1");
+			param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+			if(param1 == NULL){
+				sprintf (outBuffer, "<xml><error>XPath not found</error></xml>");
+			} else {
+				char  log[100];
+			    if ((n = (cinfo->dataStore->deleteNodes (param1, log))) < 0){
+				   	 sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
+				} else {
+				   	 sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+				}
+				xmlFree (param1);
+			}
+			common::SendMessage(cinfo->sock, outBuffer);
 	} else if (strcmp ((char *)command, "lock_dataStore") == 0){
 		if (cinfo->dataStore == NULL){
 			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");

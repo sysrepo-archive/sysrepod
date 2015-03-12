@@ -114,6 +114,7 @@ DataStore:: getNodeSet (xmlChar *xpath, char *log)
 	xmlXPathContextPtr context;
 	xmlXPathObjectPtr result;
 
+	log[0] = '\0';
 	if(!doc) {
 		sprintf (log, "Doc is NULL, why?");
 		return NULL;
@@ -295,6 +296,65 @@ DataStore::applyXPath(xmlChar *xpath, char **printBuffPtr, int printBuffSize, in
 }
 
 int
+DataStore::deleteNodes(xmlChar *xpath, char *log)
+{
+	int retValue;
+	xmlXPathObjectPtr objset;
+
+	log[0] = '\0';
+	if (lockDS()){
+		sprintf (log, "Error in locking data store");
+		return -1;
+    }
+	objset = getNodeSet (xpath, log);
+	if (!objset){
+		// error or result is an empty set
+		if (strcmp(log, "No result") == 0){
+			retValue = 0;
+		}
+	} else {
+		// update chosen nodes
+	    retValue = deleteSelectedNodes (objset->nodesetval);
+	    if (!retValue){
+	    	sprintf (log, "No result");
+	    }
+	}
+
+	if(unlockDS()){
+		sprintf (log, "Error in unlocking data store, but %d values in data store modified. Inconsistant state reached.", retValue);
+		retValue = -1;
+	}
+    return retValue;
+}
+
+int
+DataStore::deleteSelectedNodes (xmlNodeSetPtr nodes)
+{
+	int size;
+	int i;
+	int n = 0;
+	xmlNode *curr_node;
+
+	if (!nodes)    return -1;
+	size = nodes->nodeNr;
+
+	/*
+	 * Note: Nodes are processed in reverse order, i.e. reverse document
+	 *       order because xmlNodeSetContent can actually free up descendant
+	 *       of the node.
+	 */
+	 for(i = size - 1; i >= 0; i--) {
+		 curr_node = nodes->nodeTab[i];
+		 if (curr_node) {
+			 xmlUnlinkNode (curr_node);
+			 xmlFreeNode (curr_node); // Removed node needs to be freed explicitly
+		     n++;
+		 }
+	 }
+	 return n;
+}
+
+int
 DataStore::udpateSelectedNodes (xmlNodeSetPtr nodes, xmlChar *newValue)
 {
 	int size;
@@ -324,6 +384,7 @@ DataStore::updateNodes (xmlChar *xpath, xmlChar *newValue, char *log)
 	int retValue = -1;
 	xmlXPathObjectPtr objset;
 
+	log[0] = '\0';
 	if (lockDS()){
 		sprintf (log, "Error in locking data store");
 		return -1;
@@ -337,7 +398,13 @@ DataStore::updateNodes (xmlChar *xpath, xmlChar *newValue, char *log)
 	} else {
 		// update chosen nodes
 	    retValue = udpateSelectedNodes (objset->nodesetval, newValue);
+	    if (retValue == 0){
+	    	sprintf (log, "No result");
+	    } else if (retValue < 0){
+	    	sprintf (log, "Error in adding nodes");
+	    }
 	}
+
 	if(unlockDS()){
 		sprintf (log, "Error in unlocking data store, but %d values in data store modified. Inconsistant state reached.", retValue);
 		retValue = -1;
@@ -357,6 +424,7 @@ DataStore::addNodes (xmlChar *xpath, char *nodeSetXML, char *log)
 	xmlNode *cur_node;
 	int count = 0;
 
+	log[0] = '\0';
 	if (xpath == NULL || nodeSetXML == NULL || strlen ((char *)xpath) < 1 || strlen(nodeSetXML) < 1){
 		sprintf (log, "All required parameters are not provided for DataStore::addNodes()");
 		return -1;

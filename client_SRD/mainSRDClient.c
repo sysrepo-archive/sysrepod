@@ -230,6 +230,20 @@ int main(int argc, char**argv)
    if (dsList) free (dsList);
    dsList = NULL;
 
+   // Delete all nodes under <hosts> in 'configure' data store and print contents again
+   strcpy (xpath, "/hosts/*");
+   n = srd_deleteNodes (sockfd, xpath);
+   printf ("From 'configure' data store, deleted %d number of nodes.\n\n", n);
+   printf ("The updated contents of 'configure' are:\n");
+   strcpy (xpath, "/*");
+   srd_applyXPath (sockfd, xpath, &value);
+   if (value){
+   		   printf ("The contents of the data store are: \n%s\n", value);
+   		   free (value);
+   } else {
+   		   printf ("Unable to get the contents of the data store: %s.\n", dataStoreName);
+   }
+
    // The following command should fail as Data Store is in use.
    n = srd_deleteDataStore (sockfd, dataStoreName);
    if (n > 0){

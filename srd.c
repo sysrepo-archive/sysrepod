@@ -889,6 +889,54 @@ srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort)
 }
 
 int
+srd_deleteNodes (int sockfd, char *xpath)
+{
+	char *msg = NULL;
+	char *result = NULL;
+	int  retValue = -1;
+	int  n, intValue;
+
+	if (xpath == NULL){
+	   	  printf ("libsrd.a: XPath can not be NULL.\n");
+	   	  return -1;
+	}
+	if (strlen (xpath) < 1){
+	   	  printf ("linsrd.a: XPath content is missing.\n");
+	   	  return -1;
+	}
+	msg = (char *)malloc (strlen(xpath) + 100);
+	if (!msg){
+		   printf ("libsrd.a: Unable to allocate space.\n");
+		   return -1;
+	}
+	sprintf (msg, "<xml><command>delete_nodesDataStore</command><param1>%s</param1></xml>", xpath);
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+		   printf ("libsrd.a: Error in sending msg: %s\n", msg);
+		   free (msg);
+		   return -1;
+	}
+	if (!srd_isServerResponseOK (sockfd, &result)){
+		   printf ("libsrd.a: Server response to apply XPATH on Operational Data Store is not OK.\n");
+	} else {
+		   if (result) {
+		   		n = sscanf (result, "%d", &intValue);
+		   		if (n == 0) {
+		   			   retValue = 0;
+		   			   printf ("libsrd.a: Unable to read how many nodes were changed. Unpredictable modificatons done in data store.\n");
+		   		} else {
+		   			   retValue = intValue;
+		   		}
+		   	} else {
+		   		retValue = 0;
+		        printf ("libsrd.a: Unable to read how many nodes were changed. Unpredictable modificatons done in data store.\n");
+		   	}
+	}
+	if (result) free (result);
+	free (msg);
+	return retValue;
+}
+
+int
 srd_addNodes (int sockfd, char *xpath, char *value)
 {
 	char *msg = NULL;
