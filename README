@@ -1,3 +1,11 @@
+ /* License : Apache 2.0
+ *
+ *  Created on: Jan 30, 2015
+ *      Author: Niraj Sharma
+ *      Cisco Systems, Inc.
+ */
+
+
 1) To build, use 'make'.
 2) To clean, use 'make clean'.
 3) To run server listening on 3500 port:

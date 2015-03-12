@@ -1,8 +1,11 @@
 /*
  * srd.cpp
  *
- *  Created on: Feb 5, 2015
- *      Author: niraj
+ * License : Apache 2.0
+ *
+ *  Created on: Jan 30, 2015
+ *      Author: Niraj Sharma
+ *      Cisco Systems, Inc.
  */
 
 #include <stdio.h>
