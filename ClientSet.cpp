@@ -23,6 +23,7 @@
 #include "common.h"
 #include "ClientSRD.h"
 #include "OpDataStoreSet.h"
+#include "DataStore.h"
 
 
 
@@ -367,6 +368,12 @@ ClientSet::thrdMain (void *arg)
 		  break;
 	   }
 	}
+	if (cinfo->dataStore != NULL){
+		// if data store is locked, free it
+		cinfo->dataStore->unlockDS((struct ClientInfo *)cinfo);
+	}
+
+
 	// remove this client's ownership of all Op Data Stores
 	OpDataStores->removeOwner (cinfo);
 	if (cinfo->sock != INVALID_SOCK){

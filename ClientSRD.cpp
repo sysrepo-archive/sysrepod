@@ -157,7 +157,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				sprintf (printBuff, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
 			} else {
 				offset1 = sprintf(printBuff, "<xml><ok>");
-				if (!cinfo->dataStore->applyXPath (param1, &printBuff, printBuffSize, offset1)){
+				if (!cinfo->dataStore->applyXPath ((ClientInfo *)cinfo, param1, &printBuff, printBuffSize, offset1)){
 					sprintf (outBuffer, "<xml><error>%s</error></xml>", printBuff);
 					free (printBuff);
 					printBuff = NULL;
@@ -229,7 +229,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			    } else if (cinfo->dataStore == NULL){
 			   	   sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
 			    } else {
-			   	   if ((n = (cinfo->dataStore->addNodes (param1, param2Value, log))) < 0){
+			   	   if ((n = (cinfo->dataStore->addNodes ((ClientInfo *)cinfo, param1, param2Value, log))) < 0){
 			   			sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
 			   	   } else {
 			   			sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
@@ -248,7 +248,9 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				sprintf (outBuffer, "<xml><error>XPath not found</error></xml>");
 			} else {
 				char  log[100];
-			    if ((n = (cinfo->dataStore->deleteNodes (param1, log))) < 0){
+				if (cinfo->dataStore == NULL){
+					sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+				} else if ((n = (cinfo->dataStore->deleteNodes ((ClientInfo *)cinfo, param1, log))) < 0){
 				   	 sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
 				} else {
 				   	 sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
@@ -259,7 +261,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 	} else if (strcmp ((char *)command, "lock_dataStore") == 0){
 		if (cinfo->dataStore == NULL){
 			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
-		} else if(!cinfo->dataStore->lockDS()){
+		} else if(!cinfo->dataStore->lockDS((ClientInfo *)cinfo)){
         	sprintf (outBuffer, "<xml><ok/></xml>");
         } else {
         	sprintf (outBuffer, "<xml><error>Unable to lock data store %s</error></xml>", cinfo->dataStore->name);
@@ -268,7 +270,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 	} else if (strcmp ((char *)command, "unlock_dataStore") == 0){
 		if (cinfo->dataStore == NULL){
 			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
-		}else if(!cinfo->dataStore->unlockDS()){
+		}else if(!cinfo->dataStore->unlockDS((ClientInfo *)cinfo)){
 		    sprintf (outBuffer, "<xml><ok/></xml>");
 		} else {
 		    sprintf (outBuffer, "<xml><error>Unable to unlock data store %s</error></xml>", cinfo->dataStore->name);
@@ -294,7 +296,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				xmlFree (param2);
 			} else {
 				int numNodesModified;
-                numNodesModified = cinfo->dataStore->updateNodes (param1, param2, log);
+                numNodesModified = cinfo->dataStore->updateNodes ((ClientInfo *)cinfo, param1, param2, log);
                 if (numNodesModified < 0){
                 	sprintf (outBuffer, "<xml><error>Error in modifying nodes: %s</error></xml>", log);
                 } else {
@@ -443,7 +445,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
         if(param1 == NULL){
            sprintf (outBuffer, "<xml><error>Parameter - data store not found</error></xml>");
         } else {
-           if ((n = DataStores->deleteDataStore (cinfo->clientSet, (char *)param1)) >=0){
+           if ((n = DataStores->deleteDataStore ((ClientInfo *)cinfo, cinfo->clientSet, (char *)param1)) >=0){
               sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
            } else {
         	   sprintf (outBuffer, "<xml><error>Error in deleting Data Store</error></xml>");

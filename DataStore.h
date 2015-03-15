@@ -15,6 +15,8 @@
 #include <libxml/xpath.h>
 #include <pthread.h>
 
+#include "application.h"
+
 #define MAXDATASTORENAMELEN 200
 
 class DataStore {
@@ -25,6 +27,7 @@ private:
 	char xsdDir [PATHLEN + 1];
 	char xsltDir[PATHLEN +1];
 	int udpateSelectedNodes (xmlNodeSetPtr nodes, xmlChar *newValue);
+	struct ClientInfo *lockedBy;
 
 	xmlXPathObjectPtr getNodeSet (xmlChar *xpath, char *log);
 public:
@@ -37,14 +40,14 @@ public:
 	virtual ~DataStore();
 	bool initialize (void);
 	bool initialize (char *xml);
-	int lockDS (void);
-	int unlockDS(void);
-	int applyXPath (xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset);
+	int lockDS (struct ClientInfo *cinfo);
+	int unlockDS(struct ClientInfo *cinfo);
+	int applyXPath (struct ClientInfo *cinfo, xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset);
 	int printElementSet (xmlNodeSet *nodeSet, char **printBuffPtr, int printBuffSize, int initialOffset);
-	int updateNodes (xmlChar *xpath, xmlChar *newValue, char *log);
+	int updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, char *log);
 	int printXPathAtomicResult (xmlXPathObjectPtr objset, char **printBuffPtr, int printBuffSize, int offset);
-	int addNodes (xmlChar *xpath, char *nodeSetXML, char *log);
-	int deleteNodes (xmlChar *xpath, char *log);
+	int addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, char *log);
+	int deleteNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *log);
 	int deleteSelectedNodes (xmlNodeSetPtr nodes);
 };
 

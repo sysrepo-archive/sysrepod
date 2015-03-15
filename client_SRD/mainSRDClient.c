@@ -103,6 +103,10 @@ int main(int argc, char**argv)
 	   exit (1);
    }
 
+   printf ("Testing unlock without locking data store.\n");
+   srd_unlockDataStore (sockfd);
+   srd_unlockDataStore (sockfd);
+
    // Example of a simple XPATH
    strcpy (xpath, "/hosts/host/interfaces/interface/name");
    printf ("About to send xpath to server : %s\n", xpath);

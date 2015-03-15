@@ -186,7 +186,7 @@ DataStoreSet::getList (void)
 }
 
 int
-DataStoreSet::deleteDataStore (ClientSet *cset, char *name)
+DataStoreSet::deleteDataStore (struct ClientInfo *cinfo, ClientSet *cset, char *name)
 {
 	int i;
 	int retValue = 0;
@@ -206,7 +206,7 @@ DataStoreSet::deleteDataStore (ClientSet *cset, char *name)
 				retValue = -1;
 				break;
 			}
-			if (dataStoreList[i]->lockDS()){
+			if (dataStoreList[i]->lockDS(cinfo)){
 				retValue = -1;
 				break;
 			}
@@ -218,7 +218,7 @@ DataStoreSet::deleteDataStore (ClientSet *cset, char *name)
 			   memmove (&(dataStoreList[i]), &(dataStoreList[i+1]), sizeof (DataStore *)* (count - i - 1));
 			}
             count --;
-            ds->unlockDS();
+            ds->unlockDS(cinfo);
             delete (ds);
             retValue = 1;
             break;

@@ -45,6 +45,7 @@ DataStore::DataStore(char *dsname, char * filename, char *xsddir, char *xsltdir)
    } else {
        strcpy (xsltDir, xsltdir);
    }
+   lockedBy = NULL;
 }
 
 DataStore::DataStore(char *dsname)
@@ -57,17 +58,26 @@ DataStore::DataStore(char *dsname)
    } else {
 	   strcpy (name, dsname);
    }
+   lockedBy = NULL;
 }
 
 DataStore::~DataStore()
 {
    if (doc) xmlFreeDoc (doc);
+   if (lockedBy) {
+	   unlockDS(lockedBy);
+	   printf ("Looks like a harmless logical error. Control should not have reached here.\n");
+   }
    pthread_mutex_destroy (&dsMutex);
 }
 
 bool
 DataStore::initialize (char *xml)
 {
+	pthread_mutexattr_t Attr;
+	pthread_mutexattr_init(&Attr);
+	pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_ERRORCHECK);
+
 	if (xml == NULL || name == NULL || strlen (xml) == 0 || strlen(name) == 0) return false;
 	doc = xmlReadMemory(xml, strlen(xml), "noname.xml", NULL, 0);
 	if (doc == NULL)
@@ -77,7 +87,7 @@ DataStore::initialize (char *xml)
 
 	}
 
-   if (pthread_mutex_init(&dsMutex, NULL) != 0)
+   if (pthread_mutex_init(&dsMutex, &Attr) != 0)
    {
 	   // Data store mutex init failed.
 	   xmlFreeDoc (doc);
@@ -85,12 +95,17 @@ DataStore::initialize (char *xml)
 	   printf ("Error: Failed to init Mutex for DataStore.\n");
 	   return false;
    }
+
    return true;
 }
 
 bool
 DataStore::initialize ()
 {
+	pthread_mutexattr_t Attr;
+	pthread_mutexattr_init(&Attr);
+	pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_ERRORCHECK);
+
 	if (strlen (fileName) == 0 || strlen(name) == 0) return false;
 	doc = xmlReadFile(fileName, NULL, 0);
 	if (doc == NULL)
@@ -100,7 +115,7 @@ DataStore::initialize ()
 
 	}
 
-   if (pthread_mutex_init(&dsMutex, NULL) != 0)
+   if (pthread_mutex_init(&dsMutex, &Attr) != 0)
    {
 	   // Data store mutex init failed.
 	   xmlFreeDoc (doc);
@@ -137,15 +152,25 @@ DataStore:: getNodeSet (xmlChar *xpath, char *log)
 
 // lock and unlock return 0 on success
 int
-DataStore::lockDS(void)
+DataStore::lockDS(struct ClientInfo *cinfo)
 {
-	return pthread_mutex_lock(&dsMutex);
+	int n = 1;
+	n = pthread_mutex_lock(&dsMutex);
+	if (n == 0){
+		lockedBy = cinfo;
+	}
+	return n;
 }
 
 int
-DataStore::unlockDS(void)
+DataStore::unlockDS(struct ClientInfo *cinfo)
 {
-	return pthread_mutex_unlock(&dsMutex);
+	int n = 1;
+	if (lockedBy == cinfo){
+	    n = pthread_mutex_unlock(&dsMutex);
+	    if (n == 0) lockedBy = NULL;
+	}
+	return n;
 }
 
 int
@@ -254,14 +279,14 @@ DataStore::printXPathAtomicResult (xmlXPathObjectPtr objset, char **printBuffPtr
 }
 
 int
-DataStore::applyXPath(xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset)
+DataStore::applyXPath(struct ClientInfo *cinfo, xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset)
 {
 	xmlXPathObjectPtr objset;
 	char log[100];
 	int retValue = 1;
 	int n;
 
-	if (lockDS()){
+	if (lockDS(cinfo)){
 		sprintf (*printBuffPtr, "Error in locking data store");
 		return 0;
 	}
@@ -291,7 +316,7 @@ DataStore::applyXPath(xmlChar *xpath, char **printBuffPtr, int printBuffSize, in
     	retValue = 0;
     }
 	xmlXPathFreeObject (objset);
-	if(unlockDS()){
+	if(unlockDS(cinfo)){
 		sprintf (*printBuffPtr, "Error in unlocking data store");
 		retValue = 0;
 	}
@@ -299,13 +324,13 @@ DataStore::applyXPath(xmlChar *xpath, char **printBuffPtr, int printBuffSize, in
 }
 
 int
-DataStore::deleteNodes(xmlChar *xpath, char *log)
+DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, char *log)
 {
 	int retValue;
 	xmlXPathObjectPtr objset;
 
 	log[0] = '\0';
-	if (lockDS()){
+	if (lockDS(cinfo)){
 		sprintf (log, "Error in locking data store");
 		return -1;
     }
@@ -323,7 +348,7 @@ DataStore::deleteNodes(xmlChar *xpath, char *log)
 	    }
 	}
 
-	if(unlockDS()){
+	if(unlockDS(cinfo)){
 		sprintf (log, "Error in unlocking data store, but %d values in data store modified. Inconsistant state reached.", retValue);
 		retValue = -1;
 	}
@@ -382,13 +407,13 @@ DataStore::udpateSelectedNodes (xmlNodeSetPtr nodes, xmlChar *newValue)
 }
 
 int
-DataStore::updateNodes (xmlChar *xpath, xmlChar *newValue, char *log)
+DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, char *log)
 {
 	int retValue = -1;
 	xmlXPathObjectPtr objset;
 
 	log[0] = '\0';
-	if (lockDS()){
+	if (lockDS(cinfo)){
 		sprintf (log, "Error in locking data store");
 		return -1;
     }
@@ -408,7 +433,7 @@ DataStore::updateNodes (xmlChar *xpath, xmlChar *newValue, char *log)
 	    }
 	}
 
-	if(unlockDS()){
+	if(unlockDS(cinfo)){
 		sprintf (log, "Error in unlocking data store, but %d values in data store modified. Inconsistant state reached.", retValue);
 		retValue = -1;
 	}
@@ -416,7 +441,7 @@ DataStore::updateNodes (xmlChar *xpath, xmlChar *newValue, char *log)
 }
 
 int
-DataStore::addNodes (xmlChar *xpath, char *nodeSetXML, char *log)
+DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, char *log)
 {
 	xmlNodePtr parent, newNode;
 	char *newNodesStrWrapped;
@@ -444,14 +469,20 @@ DataStore::addNodes (xmlChar *xpath, char *nodeSetXML, char *log)
 		sprintf (log, "Failed to make DOM");
 		return -1;
 	}
+	if (lockDS(cinfo)){
+		sprintf (log, "Error in locking data store");
+		return -1;
+	}
 	// apply xpath and get nodeset
 	objset =  getNodeSet (xpath, log);
 	if (!objset){
 		xmlFreeDoc (newDoc);
+		unlockDS(cinfo);
 		return 0;
 	}
 	nodeSet = objset->nodesetval;
 	if (nodeSet == NULL || xmlXPathNodeSetIsEmpty(nodeSet)){
+		unlockDS(cinfo);
 		return 0;
 	}
 	for (i=0; i < nodeSet->nodeNr; i++) {
@@ -475,5 +506,6 @@ DataStore::addNodes (xmlChar *xpath, char *nodeSetXML, char *log)
 	}
 	// for testing dump doc
 	// xmlDocDump (stdout, doc);
+	unlockDS(cinfo);
 	return count;
 }

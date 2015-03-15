@@ -268,6 +268,7 @@ OpDataStoreSet::deleteOpDataStore (char *name, clientInfo *cinfo)
 				printf ("Client does not own data store: can not delete it.\n");
 				retValue = -1; // client does not own it, can not delete it
 			}
+			opDataStoreList[i]->unlockDS();
 		}
 	}
 	pthread_mutex_unlock(&dsMutex);

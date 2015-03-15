@@ -32,7 +32,7 @@ public:
 	bool addDataStoreFromString (char *name, char *xml);
 	DataStore *getDataStore (char *name);
 	char *getList (void);
-	int  deleteDataStore (ClientSet *cset, char *name);
+	int  deleteDataStore (struct ClientInfo *cinfo, ClientSet *cset, char *name);
 };
 
 #endif /* DATASTORESET_H_ */
