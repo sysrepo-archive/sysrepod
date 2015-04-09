@@ -1,5 +1,5 @@
 /*
- * mainSRDClient.cpp
+ * mainSRDClient.c
  *
  * License: Apache 2.0
  *

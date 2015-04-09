@@ -11,6 +11,7 @@
 // DO NOT USE GLOBAL LOGGING MECHANISM IN THIS FILE
 
 #include <string.h>
+#include "global.h"
 #include "DataStoreSet.h"
 
 
@@ -33,8 +34,9 @@ DataStoreSet::~DataStoreSet()
 }
 
 // Do not use log system as it is not created yet.
+
 bool
-DataStoreSet::initialize(int number)
+DataStoreSet::initialize (int number)
 {
 	int i;
 
@@ -58,7 +60,7 @@ DataStoreSet::initialize(int number)
 
 // Can use log system
 bool
-DataStoreSet:: addDataStoreFromString (char *name, char *xml)
+DataStoreSet::addDataStoreFromString (char *name, char *xml)
 {
 	if(pthread_mutex_lock(&dsMutex)){
 		printf ("Unable to lock data store set.\n");
@@ -89,7 +91,7 @@ DataStoreSet:: addDataStoreFromString (char *name, char *xml)
 
 // Do not use log system as it may not be created yet.
 bool
-DataStoreSet:: addDataStoreFromFile (char *name, char *inFile, char *xsdDir, char *xsltDir)
+DataStoreSet::addDataStoreFromFile (char *name, char *inFile, char *xsdDir, char *xsltDir)
 {
 	if(pthread_mutex_lock(&dsMutex)){
 		printf ("Unable to lock data store set.\n");

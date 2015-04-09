@@ -65,5 +65,23 @@
        ./opDStoreGetSubTree
        
        You will see the results of XPath in this XTerm window.
+  
+  12) INSTRUCTIONS to run a performance test on a huge data store with 20,000 xml nodes and a query that retrieves
+      1000 XML nodes in the result.
+      
+    a) To generate a large XML file with name huge.xml, run the following command:
+       cd server
+       ./genHuge
        
+    b) To start server, execute:
+       ./sysrepod param 
+       
+    c) To start a client that sends a XPATH query to retreive 1000 nodes, run the commands:
+       Open another XTERM window
+       cd client_SRD
+       ./hugeTest
+       
+    You will see that the query is answered in an instant. The reply is calculated, transmitted, and parsed in milli-seconds.
+    You can change parameters defined in the progream server/mainHugeTest.c to generate arbitrarily large xml in huge.xml
+    and just follow the same instructions to execute XPATH to check the performance of SYSREPOD server.     
 

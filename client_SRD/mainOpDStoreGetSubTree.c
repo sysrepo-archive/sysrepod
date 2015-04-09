@@ -1,5 +1,5 @@
 /*
- * mainOpDStoreMgmtClient.cpp
+ * mainOpDStoreMgmtClient.c
  *
  * License: Apache 2.0
  *

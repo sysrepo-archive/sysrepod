@@ -21,6 +21,7 @@ MAXOPDATASTORES 25;
 
 # Define data stores: Data Store Name, its xmlData file, XSD dir, and XSLT dir
 DATASTORE runtime deviceConfig.xml;
+DATASTORE huge    huge.xml;
 #DATASTORE runtime deviceConfig.xml XSD_runtime XSLT_runtime;
 #DATASTORE status  status.xml       XSD_status  XSLT_status;
 
