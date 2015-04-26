@@ -80,7 +80,7 @@ DataStoreSet::addDataStoreFromString (char *name, char *xml)
     if (dataStoreList[count] == NULL || !dataStoreList[count]->initialize(xml)){
     	delete dataStoreList[count];
     	dataStoreList[count] = NULL;
-    	printf ("Error in creating a new data store: %s\n", name);
+    	printf ("Warning in creating a new data store: %s\n", name);
     	pthread_mutex_unlock(&dsMutex);
     	return false;
     }
@@ -111,7 +111,7 @@ DataStoreSet::addDataStoreFromFile (char *name, char *inFile, char *xsdDir, char
     if (dataStoreList[count] == NULL || !dataStoreList[count]->initialize()){
     	delete dataStoreList[count];
     	dataStoreList[count] = NULL;
-    	printf ("Error in creating a new data store: %s\n", name);
+    	printf ("Warning in creating a new data store: %s\n", name);
     	pthread_mutex_unlock(&dsMutex);
     	return false;
     }

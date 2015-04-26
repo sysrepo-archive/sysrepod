@@ -110,7 +110,7 @@ DataStore::initialize ()
 	doc = xmlReadFile(fileName, NULL, 0);
 	if (doc == NULL)
 	{
-	   printf("Error: could not parse file %s to create DOM XML tree.\n", fileName);
+	   printf("Warning: could not parse file %s to create DOM XML tree.\n", fileName);
 	   return false;
 
 	}

@@ -445,4 +445,20 @@ bool srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort);
  ************************************************/
 void srd_DOMHandleXPath (int sockfd, xmlDocPtr ds, xmlChar *xpathExpr);
 
+/***********************************************
+ * Function : srd_registerClientSignal
+ *
+ * Description: It registers a PID and a signal with SysrepoD server. When the DOM tree being used
+ * by the calling client changes, the registered signal will be sent to the process identified by PID.
+ *
+ * Parameters:
+ * 		sockfd      - The socket connected to the server
+ * 		clientPID   - PID of the process that should receive a signal if DOM tree changes
+ * 		signalType  - The type of the signal that is to be sent to the process identified by PID.
+ *
+ * Return Value: true on success and false otherwise.
+ *
+ ************************************************/
+bool srd_registerClientSignal (int sockfd, pid_t clientPID, int signalType);
+
 #endif /* SRD_H_ */

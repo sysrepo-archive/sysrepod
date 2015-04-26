@@ -107,7 +107,7 @@ addDataStore (char *value)
     	return;
     } else {
     	if (!DataStores->addDataStoreFromFile(name, xmlFile, xsdDir, xsltDir)){
-    		printf ("Error in adding data store %s\n", name);
+    		printf ("Warning: Could not add data store %s\n", name);
     	}
     }
 }

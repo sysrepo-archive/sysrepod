@@ -37,6 +37,8 @@ typedef struct clientInfo{
     char clientIPAddress[50];
     int  clientPort;
     int  clientBackSock;
+    pid_t clientPID;
+    int  signalType;
 } clientInfo;
 
 #ifdef MAIN_C_

@@ -1,10 +1,10 @@
 GCC = g++
 Gcc = gcc
 
-all: sysrepod client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/opDStoreGetSubTree client_SRD/hugeTest server/genHuge install
+all: sysrepod client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/opDStoreGetSubTree client_SRD/hugeTest client_SRD/signalTest server/genHuge install
 
 clean:
-	rm *.o sysrepod libsrd.a server/sysrepod server/genHuge server/huge.xml client_SRD/hugeTest client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/opDStoreGetSubTree client_SRD/*.o
+	rm *.o sysrepod libsrd.a server/sysrepod server/genHuge server/huge.xml client_SRD/hugeTest client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/signalTest client_SRD/opDStoreGetSubTree client_SRD/*.o
 
 sysrepod: common.o mainSysRepoD.o ClientSet.o DataStore.o DataStoreSet.o Client.o ClientSRD.o global.h application.h OpDataStore.o OpDataStoreSet.o
 	$(GCC) -g -o sysrepod mainSysRepoD.o common.o ClientSet.o DataStore.o DataStoreSet.o OpDataStore.o OpDataStoreSet.o Client.o ClientSRD.o -pthread -lxml2
@@ -65,6 +65,12 @@ client_SRD/opDStoreGetSubTree: client_SRD/mainOpDStoreGetSubTree.o srd.o libsrd.
 	
 client_SRD/mainOpDStoreGetSubTree.o: client_SRD/mainOpDStoreGetSubTree.c
 	$(Gcc) -I/usr/include/libxml2 -I. -g -o client_SRD/mainOpDStoreGetSubTree.o -c client_SRD/mainOpDStoreGetSubTree.c
+
+client_SRD/signalTest: client_SRD/mainSignalExample.o
+	$(Gcc) -g -o client_SRD/signalTest client_SRD/mainSignalExample.o libsrd.a -lxml2
+	
+client_SRD/mainSignalExample.o: client_SRD/mainSignalExample.c
+	$(Gcc) -I/usr/include/libxml2 -I. -g -o client_SRD/mainSignalExample.o -c client_SRD/mainSignalExample.c
 	
 client_SRD/hugeTest: client_SRD/mainHugeTest.o
 	$(Gcc) -g -o client_SRD/hugeTest client_SRD/mainHugeTest.o libsrd.a -lxml2

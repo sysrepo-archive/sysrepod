@@ -69,6 +69,8 @@ ClientSet::initialize (int maximumClients)
 	    clients[i].clientBackSock = -1;
 	    clients[i].clientIPAddress[0] = '\0';
 	    clients[i].clientPort = -1;
+	    clients[i].clientPID = -1;
+	    clients[i].signalType = -1;
 	}
 	return false;
 }
@@ -94,6 +96,17 @@ ClientSet::newClient (int sock)
 		pthread_mutex_unlock(&csMutex);
 		return -1;
 	}
+	// initialize client slot
+    clients[i].sock = INVALID_SOCK;
+	clients[i].client = NULL;
+	clients[i].protocol = INVALID_PROTOCOL;
+	clients[i].dataStore = NULL;
+	clients[i].clientBackSock = -1;
+    clients[i].clientIPAddress[0] = '\0';
+	clients[i].clientPort = -1;
+	clients[i].clientPID = -1;
+	clients[i].signalType = -1;
+
 	clients[slotIndex].sock = sock;
 	clients[slotIndex].slotFree = false;
 	numClients++;
@@ -421,7 +434,7 @@ ClientSet::isDataStoreInUse (DataStore *ds)
 	pthread_mutex_lock(&csMutex);
 	if (clients == NULL || numClients == 0) return false;
 	for (i = 0; i < numClients; i++){
-		if (clients[i].dataStore == ds){
+		if (clients[i].slotFree == false && clients[i].dataStore == ds){
 			retValue = true;
 		}
 	}
@@ -435,6 +448,13 @@ ClientSet::saveClientBackConnectionInfo (struct clientInfo *cinfo, char *IPAddre
    cinfo->clientPort = port;
    strcpy(cinfo->clientIPAddress, IPAddress);
    cinfo->clientBackSock = -1;
+}
+
+void
+ClientSet::saveClientBackSignalInfo (struct clientInfo *cinfo, pid_t clientPID, int signalType)
+{
+	cinfo->clientPID = clientPID;
+	cinfo->signalType = signalType;
 }
 
 bool
@@ -475,4 +495,19 @@ ClientSet::closeBackConnection (struct clientInfo *cinfo)
     	close (cinfo->clientBackSock);
     	cinfo->clientBackSock = -1;
     }
+}
+
+void
+ClientSet::signalClients (DataStore *ds)
+{
+	int i;
+	pthread_mutex_lock(&csMutex);
+	if (clients == NULL || numClients == 0) return;
+	for (i = 0; i < numClients; i++){
+		if (clients[i].slotFree == false && clients[i].dataStore == ds
+				&& clients[i].clientPID >= 0 && clients[i].signalType >=0){
+			kill (clients[i].clientPID, clients[i].signalType);
+		}
+	}
+	pthread_mutex_unlock(&csMutex);
 }

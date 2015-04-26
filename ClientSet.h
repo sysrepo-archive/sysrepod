@@ -35,8 +35,10 @@ public:
 	bool isDataStoreInUse (DataStore *ds);
 	void deleteClient (int index);
 	void saveClientBackConnectionInfo (struct clientInfo *cinfo, char *IPAddress, int port);
+	void saveClientBackSignalInfo (struct clientInfo *cinfo, pid_t clientPID, int signalType);
 	bool openBackConnection (struct clientInfo *cinfo);
 	void closeBackConnection (struct clientInfo *cinfo);
+	void signalClients (DataStore *ds);
 	static void *thrdMain (void *arg); // main routine for every client thread
 	static int ProcessMessage (
 			clientInfo *cinfo,

@@ -233,6 +233,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			   			sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
 			   	   } else {
 			   			sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+			   			cinfo->clientSet->signalClients (cinfo->dataStore);
 				   }
 				}
 			    free (param2Value);
@@ -254,6 +255,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				   	 sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
 				} else {
 				   	 sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+				   	 cinfo->clientSet->signalClients (cinfo->dataStore);
 				}
 				xmlFree (param1);
 			}
@@ -301,6 +303,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
                 	sprintf (outBuffer, "<xml><error>Error in modifying nodes: %s</error></xml>", log);
                 } else {
                 	sprintf (outBuffer, "<xml><ok>%d</ok></xml>",numNodesModified);
+                	if (numNodesModified > 0) cinfo->clientSet->signalClients (cinfo->dataStore);
                 }
                 common::SendMessage(cinfo->sock, outBuffer);
 				xmlFree (param2);
@@ -315,7 +318,6 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		    sprintf (outBuffer, "<xml><error>Value of IP Address not found</error></xml>");
 		    common::SendMessage(cinfo->sock, outBuffer);
 		} else {
-			char log[100];
 			strcpy ((char *) xpath, "/xml/param2");
 			param2 = ClientSet::GetFirstNodeValue(doc, xpath);
 			if(param2 == NULL){
@@ -327,15 +329,52 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				n = sscanf ((char *)param2, "%d", &portNum);
 				if (n != 1) {
 					portNum = -1;
-					printf ("Port number is not a proper integer.\n");
+					sprintf (outBuffer, "<xml><error>Port number is not a proper integer</error></xml>");
+				} else {
+				    cinfo->clientSet->saveClientBackConnectionInfo (cinfo, (char *)param1, portNum);
+                    sprintf (outBuffer, "<xml><ok/></xml>");
 				}
-				cinfo->clientSet->saveClientBackConnectionInfo (cinfo, (char *)param1, portNum);
-                sprintf (outBuffer, "<xml><ok/></xml>");
                 common::SendMessage(cinfo->sock, outBuffer);
 				xmlFree (param2);
 			}
 		    xmlFree (param1);
 		}
+	} else if (strcmp((char *)command, "register_clientSignal") == 0){
+			// param1 contains PID and param2 contains Signal Type
+			strcpy ((char *) xpath, "/xml/param1");
+			param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+			if(param1 == NULL){
+			    sprintf (outBuffer, "<xml><error>Process PID not found</error></xml>");
+			    common::SendMessage(cinfo->sock, outBuffer);
+			} else {
+				pid_t clientPID;
+				int n = 0;
+
+				n = sscanf ((char *) param1, "%d", &clientPID);
+				if (n != 1){
+					sprintf (outBuffer, "<xml><error>PID is not a proper integer</error></xml>");
+					common::SendMessage (cinfo->sock, outBuffer);
+				} else {
+				    strcpy ((char *) xpath, "/xml/param2");
+				    param2 = ClientSet::GetFirstNodeValue(doc, xpath);
+				    if(param2 == NULL){
+				         sprintf (outBuffer, "<xml><error>Signal type not found</error></xml>");
+				         common::SendMessage(cinfo->sock, outBuffer);
+				    } else {
+					     int signalType;
+					     n = sscanf ((char *)param2, "%d", &signalType);
+					     if (n != 1) {
+						     sprintf (outBuffer, "<xml><error>Signal type is not a proper integer</error></xml>");
+					     } else {
+					         cinfo->clientSet->saveClientBackSignalInfo (cinfo, clientPID, signalType);
+	                         sprintf (outBuffer, "<xml><ok/></xml>");
+					     }
+	                     common::SendMessage(cinfo->sock, outBuffer);
+	                     xmlFree (param2);
+				    }
+				}
+			    xmlFree (param1);
+			}
 	} else if (strcmp ((char *)command, "create_dataStore") == 0){
 		// param1 contains the name of the new data store and param2 contains XML content of the data store
 		strcpy ((char *) xpath, "/xml/param1");
