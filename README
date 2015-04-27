@@ -102,6 +102,9 @@
        ./signalTest
        
   14) INSTRUCTIONS to run an XSLT test: It applies an XSLT to the data store and prints results.
+      This XSLT filters all LEAF nodes and prints "name" and "value" pairs separated by ':' on
+      a separate line. XSLT's can be used to generate XML, HTML, and flat data suitable for consumption
+      by conventional program like SSHD.
       Note that XSLT must be enclosed within CDATA clause.
        
     a) To start server, execute:
