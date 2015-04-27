@@ -100,5 +100,17 @@
        Open another XTERM window
        cd client_SRD
        ./signalTest
+       
+  14) INSTRUCTIONS to run an XSLT test: It applies an XSLT to the data store and prints results.
+      Note that XSLT must be enclosed within CDATA clause.
+       
+    a) To start server, execute:
+       cd server
+       ./sysrepod param 
+       
+    c) To start this client to apply XSLT on the data store, run the commands:
+       Open another XTERM window
+       cd client_SRD
+       ./xsltTest
 
        

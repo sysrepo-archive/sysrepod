@@ -30,6 +30,7 @@ private:
 	struct ClientInfo *lockedBy;
 
 	xmlXPathObjectPtr getNodeSet (xmlChar *xpath, char *log);
+	void removeChar(char *str, char ch);
 public:
 	// DOM treee that contains the data
 	xmlDocPtr doc;
@@ -43,6 +44,7 @@ public:
 	int lockDS (struct ClientInfo *cinfo);
 	int unlockDS(struct ClientInfo *cinfo);
 	int applyXPath (struct ClientInfo *cinfo, xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset);
+	int applyXSLT (struct ClientInfo *cinfo, char *xpath, char **printBuffPtr, int printBuffSize, int offset);
 	int printElementSet (xmlNodeSet *nodeSet, char **printBuffPtr, int printBuffSize, int initialOffset);
 	int updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, char *log);
 	int printXPathAtomicResult (xmlXPathObjectPtr objset, char **printBuffPtr, int printBuffSize, int offset);

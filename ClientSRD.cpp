@@ -173,6 +173,38 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		   common::SendMessage(cinfo->sock, printBuff);
 		   free (printBuff);
 		}
+	} else if(strcmp ((char *)command, "apply_xslt")==0){
+	    char *printBuff = NULL;
+		strcpy ((char *) xpath, "/xml/param1");
+		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+		if(param1 == NULL){
+			sprintf (outBuffer, "<xml><error>XSLT not found</error></xml>");
+		} else {
+			int offset1 = 0;
+			int printBuffSize = 100;
+			printBuff = (char *)malloc (printBuffSize);
+			if (!printBuff){
+				sprintf (outBuffer, "<xml><error>Unable to allocate buffer space</error></xml>");
+			} else if (cinfo->dataStore == NULL){
+				sprintf (printBuff, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+			} else {
+				offset1 = sprintf(printBuff, "<xml><ok>");
+				if (!cinfo->dataStore->applyXSLT ((ClientInfo *)cinfo, (char *)param1, &printBuff, printBuffSize, offset1)){
+					sprintf (outBuffer, "<xml><error>%s</error></xml>", printBuff);
+					free (printBuff);
+					printBuff = NULL;
+				} else {
+					strcat (printBuff, "</ok></xml>");
+				}
+			}
+			xmlFree(param1);
+	    }
+		if (printBuff == NULL){
+			common::SendMessage(cinfo->sock, outBuffer);
+		} else {
+			common::SendMessage(cinfo->sock, printBuff);
+			free (printBuff);
+	    }
 	} else if (strcmp ((char *)command, "apply_xpathOpDataStore") == 0){
 		char *printBuff = NULL;
 		// need to read 2 parameters: OpDataStore Name and XPath to apply

@@ -461,4 +461,21 @@ void srd_DOMHandleXPath (int sockfd, xmlDocPtr ds, xmlChar *xpathExpr);
  ************************************************/
 bool srd_registerClientSignal (int sockfd, pid_t clientPID, int signalType);
 
+/***********************************************
+ * Function : srd_applyXSLT
+ *
+ * Description: It applies the given XSLT on the Data Store already set for this client. The
+ * serialized result in string form is returned.
+ *
+ * Parameters:
+ * 		sockfd   - The socket connected to the server
+ * 		xsltTexT - The XSLT to be applied. NOTE: XSLT must be enclosed in CDATA clause.
+ * 		value    - Used to return the result. After use, need to free it. It can be NULL on error or if
+ * 		           the result of applying XSLT is an empty set.
+ *
+ * Return Value: void
+ *
+ ************************************************/
+void srd_applyXSLT (int sockfd, char *xslt, char **value);
+
 #endif /* SRD_H_ */

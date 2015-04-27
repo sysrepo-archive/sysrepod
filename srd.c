@@ -323,6 +323,43 @@ srd_setDataStore (int sockfd, char *dsname)
 }
 
 void
+srd_applyXSLT (int sockfd, char *xsltText, char **buffPtr)
+{
+   char *msg;
+
+   if (buffPtr == NULL) {
+	   printf ("libsrd.a: Buffer Pointer is null. No place to return results.\n");
+	   return;
+   }
+   if (xsltText == NULL){
+	   printf ("libsrd.a: XSLT pointer can not be NULL.\n");
+	   return;
+   }
+   if (strlen (xsltText) < 1){
+	   printf ("linsrd.a: XSLT content is missing.\n");
+	   return;
+   }
+   // Once can not specify XSLT without CDATA clause
+   if(strstr(xsltText, "CDATA") == NULL) {
+	   printf ("libsrd.a: XSLT can not be specifed without CDATA clause with an XML message.\n");
+	   return;
+   }
+   msg = (char *)malloc (strlen(xsltText) + 100);
+   if (!msg){
+	   printf ("libsrd.a: Unable to allocate space.\n");
+	   return;
+   }
+   sprintf (msg, "<xml><command>apply_xslt</command><param1>%s</param1></xml>", xsltText);
+   if (!srd_sendServer (sockfd, msg, strlen(msg))){
+      printf ("libsrd.a: Error in sending msg: %s\n", msg);
+   }
+   if (!srd_isServerResponseOK (sockfd, buffPtr)){
+	       printf ("libsrd.a: Server response to apply XPATH is not OK.\n");
+   }
+   free (msg);
+}
+
+void
 srd_applyXPath (int sockfd, char *xpath, char **buffPtr)
 {
    char *msg;

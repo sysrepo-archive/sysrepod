@@ -9,9 +9,10 @@
  */
 
 #include <string.h>
-//#include <stdio.h>
-//#include <libxml/parser.h>
-//#include <libxml/tree.h>
+#include <libxslt/xslt.h>
+#include <libxslt/xsltInternals.h>
+#include <libxslt/transform.h>
+#include <libxslt/xsltutils.h>
 
 #include "common.h"
 #include "DataStore.h"
@@ -316,6 +317,94 @@ DataStore::applyXPath(struct ClientInfo *cinfo, xmlChar *xpath, char **printBuff
     	retValue = 0;
     }
 	xmlXPathFreeObject (objset);
+	if(unlockDS(cinfo)){
+		sprintf (*printBuffPtr, "Error in unlocking data store");
+		retValue = 0;
+	}
+	return retValue;
+}
+
+void
+DataStore::removeChar(char *str, char garbage) {
+
+    char *src, *dst;
+    for (src = dst = str; *src != '\0'; src++) {
+        *dst = *src;
+        if (*dst != garbage) dst++;
+    }
+    *dst = '\0';
+}
+
+int
+DataStore::applyXSLT(struct ClientInfo *cinfo, char *xslt, char **printBuffPtr, int printBuffSize, int offset)
+{
+	xsltStylesheetPtr cur = NULL;
+	char log[100];
+	int retValue = 1, rc;
+	int n;
+	xmlDocPtr sheetDoc, res;
+	char *buf = NULL;
+	int   size;
+	char *newSpace;
+	int lastOffset = offset + 2; // length of </ok></xml>
+
+	if (lockDS(cinfo)){
+		sprintf (*printBuffPtr, "Error in locking data store");
+		return 0;
+	}
+	xmlSubstituteEntitiesDefault(1);
+	xmlLoadExtDtdDefaultValue = 1;
+	removeChar (xslt, '\\');
+	sheetDoc = xmlReadMemory(xslt, strlen(xslt), "noname.xml", NULL, 0);
+	if (sheetDoc == NULL){
+		sprintf (*printBuffPtr, "<xml><error>Unable to form doc from xslt string</error></xml>");
+		printf ("Style Sheet is : \n%s\n", xslt);
+		unlockDS (cinfo);
+		return 0;
+	}
+	cur = xsltParseStylesheetDoc(sheetDoc);
+	if (cur == NULL){
+		sprintf (*printBuffPtr, "<xml><error>Unable to form style sheet</error></xml>");
+		xmlFreeDoc (sheetDoc);
+		unlockDS (cinfo);
+		return 0;
+	}
+	res = xsltApplyStylesheet (cur, doc, NULL);
+	if (res == NULL){
+		sprintf (*printBuffPtr, "<xml><error>Error in applying xslt on data store</error></xml>");
+		xsltFreeStylesheet (cur); // do not free sheetDoc, it is done intrnally by this call
+		unlockDS (cinfo);
+		return 0;
+	}
+	rc = xsltSaveResultToString((xmlChar **)&buf, &size, res, cur);
+	if (rc >=0 && buf != NULL){ // rc == -1 means error
+		if (size > 0){
+			// copy buffer to *printBuffPtr
+			if (printBuffSize < (offset + size + lastOffset + 2)){
+				printBuffSize = offset + size + lastOffset + 2;
+                newSpace = (char *)realloc (*printBuffPtr, printBuffSize);
+                if (!newSpace){
+                	sprintf (*printBuffPtr, "<xml><error>Unable to allocate space to store results</error></xml>");
+                	xmlFree (buf);
+                	xsltFreeStylesheet(cur); // Do not free sheetDoc, it is implicitly freed by this call
+                	xmlFreeDoc(res);
+                	xsltCleanupGlobals();
+                	xmlCleanupParser();
+                	unlockDS (cinfo);
+                	return 0;
+                }
+                *printBuffPtr = newSpace;
+			}
+			// actual copy
+			memcpy(*printBuffPtr+offset, buf, size);
+			*(*printBuffPtr+offset+size) = '\0';
+		}
+		xmlFree (buf);
+	}
+	xsltFreeStylesheet(cur); // Do not free sheetDoc, it is implicitly freed by this call
+	xmlFreeDoc(res);
+	xsltCleanupGlobals();
+	xmlCleanupParser();
 	if(unlockDS(cinfo)){
 		sprintf (*printBuffPtr, "Error in unlocking data store");
 		retValue = 0;
