@@ -1,9 +1,9 @@
 /*
- * mainHugeTest.c
+ * mainSignalExample.c
  *
  * License: Apache 2.0
  *
- *  Created on: Jan 25, 2015
+ *  Created on: April 25, 2015
  *      Creator: Niraj Sharma
  *      Cisco Systems, Inc.
  *
