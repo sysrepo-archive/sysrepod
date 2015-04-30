@@ -297,10 +297,27 @@ bool srd_listDataStores (int sockfd, char **result);
  * 		sockfd  - The socket connected to the server
  * 		name    - The Data Store to be deleted.
  *
- * Return Value: On success returns 0 or a +e number and -1 on failure.
+ * Return Value: On success returns 1 and 0 on failure.
  *
  ************************************************/
 int  srd_deleteDataStore (int sockfd, char *name);
+
+/***********************************************
+ * Function : srd_copyDataStore
+ *
+ * Description: It copies one data store on another one. Both data store must exist before this call.
+ * For example, if you want to copy 'configuration' data store on 'runtime', you can use this call.
+ * The data store being modified must not be in LOCKED state.
+ *
+ * Parameters:
+ * 		sockfd   - The socket connected to the server
+ * 		fromName - The Data Store to be copied from.
+ * 		toName   - The Data Store over which the copy will be made
+ *
+ * Return Value: On success returns 1 and 0 on failure.
+ *
+ ************************************************/
+int  srd_copyDataStore (int sockfd, char *fromName, char *toName);
 
 /***********************************************
  * Function : srd_createOpDataStores

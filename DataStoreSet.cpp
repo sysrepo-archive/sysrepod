@@ -230,3 +230,63 @@ DataStoreSet::deleteDataStore (struct ClientInfo *cinfo, ClientSet *cset, char *
 	return retValue;
 }
 
+int
+DataStoreSet::copyDataStore (struct ClientInfo *cinfo, char *fromDS, char *toDS, char *printBuff, int printBuffSize)
+{
+	DataStore *from, *to;
+	xmlDocPtr duplicate;
+	int retValue;
+
+	if(pthread_mutex_lock(&dsMutex)){
+		sprintf (printBuff, "Unable to lock data store set.");
+		return 0;
+	}
+	from = getDataStore_noLock (fromDS);
+	if (from == NULL){
+		sprintf (printBuff, "Could not locate FROM_Data_Store %s", fromDS);
+		pthread_mutex_unlock(&dsMutex);
+		return 0;
+	}
+	if (from->lockDS(cinfo)){
+		sprintf (printBuff, "Unable to lock FROM_Data_Store %s", fromDS);
+		pthread_mutex_unlock(&dsMutex);
+		return 0;
+	}
+	if (from->doc == NULL){
+		sprintf (printBuff, "DOM tree in FROM_Data_Store %s is NULL", fromDS);
+		from->unlockDS(cinfo);
+		pthread_mutex_unlock(&dsMutex);
+		return 0;
+	}
+	to = getDataStore_noLock (toDS);
+	if (to == NULL){
+		sprintf (printBuff, "Unable to locate TO_Data_store %s.", toDS);
+		from->unlockDS(cinfo);
+		pthread_mutex_unlock(&dsMutex);
+		return 0;
+	}
+	if (to->lockDS(cinfo)){
+		sprintf (printBuff, "Unable to lock TO_Data_Store %s", toDS);
+		from->unlockDS(cinfo);
+		pthread_mutex_unlock(&dsMutex);
+		return 0;
+	}
+
+	// create a duplicate of from->doc
+	duplicate = xmlCopyDoc (from->doc, 1);
+	if (duplicate){
+	    xmlFreeDoc (to->doc);
+	    to->doc = duplicate;
+	    retValue = 1;
+	}else {
+		sprintf (printBuff, "Unable to create duplicate DOM tree from data store %s", fromDS);
+		retValue = 0;
+	}
+
+	from->unlockDS(cinfo);
+	to->unlockDS(cinfo);
+
+	pthread_mutex_unlock(&dsMutex);
+	return retValue;
+}
+

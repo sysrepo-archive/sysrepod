@@ -12,6 +12,7 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <unistd.h>
+#include <libxml/xmlreader.h>
 
 #include "common.h"
 #include "ClientSet.h"
@@ -19,7 +20,6 @@
 #include "DataStoreSet.h"
 #include "OpDataStoreSet.h"
 
-#include <libxml/xmlreader.h>
 
 Client_SRD::Client_SRD()
 {
@@ -157,7 +157,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				sprintf (printBuff, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
 			} else {
 				offset1 = sprintf(printBuff, "<xml><ok>");
-				if (!cinfo->dataStore->applyXPath ((ClientInfo *)cinfo, param1, &printBuff, printBuffSize, offset1)){
+				if (!cinfo->dataStore->applyXPath ((struct ClientInfo *)cinfo, param1, &printBuff, printBuffSize, offset1)){
 					sprintf (outBuffer, "<xml><error>%s</error></xml>", printBuff);
 					free (printBuff);
 					printBuff = NULL;
@@ -189,7 +189,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				sprintf (printBuff, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
 			} else {
 				offset1 = sprintf(printBuff, "<xml><ok>");
-				if (!cinfo->dataStore->applyXSLT ((ClientInfo *)cinfo, (char *)param1, &printBuff, printBuffSize, offset1)){
+				if (!cinfo->dataStore->applyXSLT ((struct ClientInfo *)cinfo, (char *)param1, &printBuff, printBuffSize, offset1)){
 					sprintf (outBuffer, "<xml><error>%s</error></xml>", printBuff);
 					free (printBuff);
 					printBuff = NULL;
@@ -261,7 +261,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			    } else if (cinfo->dataStore == NULL){
 			   	   sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
 			    } else {
-			   	   if ((n = (cinfo->dataStore->addNodes ((ClientInfo *)cinfo, param1, param2Value, log))) < 0){
+			   	   if ((n = (cinfo->dataStore->addNodes ((struct ClientInfo *)cinfo, param1, param2Value, log))) < 0){
 			   			sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
 			   	   } else {
 			   			sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
@@ -283,7 +283,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				char  log[100];
 				if (cinfo->dataStore == NULL){
 					sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
-				} else if ((n = (cinfo->dataStore->deleteNodes ((ClientInfo *)cinfo, param1, log))) < 0){
+				} else if ((n = (cinfo->dataStore->deleteNodes ((struct ClientInfo *)cinfo, param1, log))) < 0){
 				   	 sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
 				} else {
 				   	 sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
@@ -295,7 +295,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 	} else if (strcmp ((char *)command, "lock_dataStore") == 0){
 		if (cinfo->dataStore == NULL){
 			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
-		} else if(!cinfo->dataStore->lockDS((ClientInfo *)cinfo)){
+		} else if(!cinfo->dataStore->lockDS((struct ClientInfo *)cinfo)){
         	sprintf (outBuffer, "<xml><ok/></xml>");
         } else {
         	sprintf (outBuffer, "<xml><error>Unable to lock data store %s</error></xml>", cinfo->dataStore->name);
@@ -304,7 +304,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 	} else if (strcmp ((char *)command, "unlock_dataStore") == 0){
 		if (cinfo->dataStore == NULL){
 			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
-		}else if(!cinfo->dataStore->unlockDS((ClientInfo *)cinfo)){
+		}else if(!cinfo->dataStore->unlockDS((struct ClientInfo *)cinfo)){
 		    sprintf (outBuffer, "<xml><ok/></xml>");
 		} else {
 		    sprintf (outBuffer, "<xml><error>Unable to unlock data store %s</error></xml>", cinfo->dataStore->name);
@@ -330,7 +330,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				xmlFree (param2);
 			} else {
 				int numNodesModified;
-                numNodesModified = cinfo->dataStore->updateNodes ((ClientInfo *)cinfo, param1, param2, log);
+                numNodesModified = cinfo->dataStore->updateNodes ((struct ClientInfo *)cinfo, param1, param2, log);
                 if (numNodesModified < 0){
                 	sprintf (outBuffer, "<xml><error>Error in modifying nodes: %s</error></xml>", log);
                 } else {
@@ -516,7 +516,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
         if(param1 == NULL){
            sprintf (outBuffer, "<xml><error>Parameter - data store not found</error></xml>");
         } else {
-           if ((n = DataStores->deleteDataStore ((ClientInfo *)cinfo, cinfo->clientSet, (char *)param1)) >=0){
+           if ((n = DataStores->deleteDataStore ((struct ClientInfo *)cinfo, cinfo->clientSet, (char *)param1)) >=0){
               sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
            } else {
         	   sprintf (outBuffer, "<xml><error>Error in deleting Data Store</error></xml>");
@@ -524,6 +524,43 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
         }
         common::SendMessage(cinfo->sock, outBuffer);
         xmlFree (param1);
+	} else if (strcmp ((char *)command, "copy_dataStore") == 0){
+		char *printBuff = NULL;
+		// need to read 2 parameters: FromDataStore Name and ToDataStore name
+		strcpy ((char *) xpath, "/xml/param1");
+		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+		if(param1 == NULL){
+			sprintf (outBuffer, "<xml><error>FromDataStore name not found</error></xml>");
+		} else {
+			char log[100];
+			strcpy ((char *) xpath, "/xml/param2");
+			param2 = ClientSet::GetFirstNodeValue(doc, xpath);
+			if(param2 == NULL){
+				sprintf (outBuffer, "<xml><error>ToDataStore name not found</error></xml>");
+			} else {
+				int printBuffSize = 100;
+				printBuff = (char *)malloc (printBuffSize);
+				if (printBuff == NULL) {
+				   sprintf (outBuffer, "<xml><error>Unable to allocate buffer space</error></xml>");
+				} else if (!DataStores->copyDataStore ((struct ClientInfo *)cinfo, (char *)param1, (char *)param2, printBuff, printBuffSize)){
+			        sprintf (outBuffer, "<xml><error>%s</error></xml>", printBuff);
+			        free (printBuff);
+			        printBuff = NULL;
+			    } else {
+			    	sprintf (outBuffer, "<xml><ok/></xml>");
+			    	free (printBuff);
+			    	printBuff = NULL;
+			    }
+				xmlFree (param2);
+			}
+			xmlFree (param1);
+		}
+	    if (printBuff == NULL){
+	        common::SendMessage(cinfo->sock, outBuffer);
+	    }else {
+	        common::SendMessage(cinfo->sock, &(printBuff[MSGLENFIELDWIDTH + 1]));
+	        free (printBuff);
+	    }
 	}else if (strcmp ((char *)command, "terminate") == 0){ // terminate this server
 		retValue = -1;
 		sprintf (outBuffer, "<xml><ok/></xml>");

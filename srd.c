@@ -663,40 +663,86 @@ srd_deleteDataStore (int sockfd, char *name)
 {
 	char *msg;
 	char *result;
-	int n = -1;
+	int n;
 	int intValue;
 	bool retValue;
 
 	if (name == NULL || strlen (name) == 0){
 		printf ("libsrd.a: Name of Data Store can not be absent.\n");
-		return (-1);
+		return 0;
 	}
 	msg = (char *)malloc (strlen(name) + 100);
 	if (!msg){
 		printf ("libsrd.a: Unable to allocate space.\n");
-		return -1;
+		return 0;
 	}
 	sprintf (msg, "<xml><command>delete_dataStore</command><param1>%s</param1></xml>", name);
 	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
 	    free (msg);
-	    return -1;
+	    return 0;
 	}
 	if (!srd_isServerResponseOK (sockfd, &result)){
 		printf ("libsrd.a: Server response is not OK.\n");
 		free (msg);
-		return -1;
+		return 0;
 	}
 	if (result) {
 		   n = sscanf (result, "%d", &intValue);
-		   if (n == 0) {
-			   n = -1; // error condition.
-		   } else {
-			   n = intValue;
+		   if (n != 0) {
+			   n = 1;
 		   }
 		   free (result);
 	} else {
         printf ("libsrd.a: Unable to read how many data stores deleted. Unpredictable modificatons done in data store.\n");
+        n = 1;
+	}
+	free (msg);
+	return n;
+}
+
+int
+srd_copyDataStore (int sockfd, char *fromName, char *toName)
+{
+	char *msg;
+	char *result;
+	int n;
+	int intValue;
+	bool retValue;
+
+	if (fromName == NULL || strlen (fromName) == 0){
+		printf ("libsrd.a: Name of FROM Data Store can not be absent.\n");
+		return 0;
+	}
+	if (toName == NULL || strlen (toName) == 0){
+		printf ("libsrd.a: Name of TO Data Store can not be absent.\n");
+		return 0;
+	}
+	msg = (char *)malloc (strlen(fromName) + strlen (toName) + 100);
+	if (!msg){
+		printf ("libsrd.a: Unable to allocate space.\n");
+		return 0;
+	}
+	sprintf (msg, "<xml><command>copy_dataStore</command><param1>%s</param1><param2>%s</param2></xml>", fromName, toName);
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+	    free (msg);
+	    return 0;
+	}
+	if (!srd_isServerResponseOK (sockfd, &result)){
+		printf ("libsrd.a: Server response is not OK.\n");
+		free (msg);
+		return 0;
+	}
+	if (result) {
+		   n = sscanf (result, "%d", &intValue);
+		   if (n != 0) {
+			   n = 1;
+		   }
+		   free (result);
+	} else {
+        printf ("libsrd.a: Unable to read result. Unpredictable modificatons done in data store.\n");
+        n = 1;
 	}
 	free (msg);
 	return n;
@@ -741,41 +787,40 @@ srd_deleteOpDataStore (int sockfd, char *name)
 {
 	char *msg;
 	char *result;
-	int n = -1;
+	int n;
 	int intValue;
 	bool retValue;
 
 	if (name == NULL || strlen (name) == 0){
 		printf ("libsrd.a: Name of Operational Data Store can not be absent.\n");
-		return (-1);
+		return 0;
 	}
 
 	msg = (char *)malloc (strlen(name) + 100);
 	if (!msg){
 		printf ("libsrd.a: Unable to allocate space.\n");
-		return -1;
+		return 0;
 	}
 	sprintf (msg, "<xml><command>delete_opDataStore</command><param1>%s</param1></xml>", name);
 	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
 	    free (msg);
-	    return -1;
+	    return 0;
 	}
 	if (!srd_isServerResponseOK (sockfd, &result)){
 		printf ("libsrd.a: Server response is not OK.\n");
 		free (msg);
-		return -1;
+		return 0;
 	}
 	if (result) {
 		   n = sscanf (result, "%d", &intValue);
-		   if (n == 0) {
-			   n = -1; // error condition.
-		   } else {
-			   n = intValue;
+		   if (n != 0) {
+			   n = 1;
 		   }
 		   free (result);
 	} else {
         printf ("libsrd.a: Unable to read how many Operational Data Stores deleted. Unpredictable modificatons done in data store.\n");
+        n = 1;
 	}
 	free (msg);
 	return n;

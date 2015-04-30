@@ -33,6 +33,7 @@ public:
 	DataStore *getDataStore (char *name);
 	char *getList (void);
 	int  deleteDataStore (struct ClientInfo *cinfo, ClientSet *cset, char *name);
+	int copyDataStore (struct ClientInfo *cinfo, char *fromDS, char *toDS, char *printBuff, int printBuffSize);
 };
 
 #endif /* DATASTORESET_H_ */
