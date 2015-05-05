@@ -23,6 +23,7 @@ MAXOPDATASTORES 25;
 DATASTORE runtime deviceConfig.xml;
 DATASTORE huge    huge.xml;
 DATASTORE sshd    sshd.xml;
+DATASTORE sshd_config    sshd_config.xml;
 #DATASTORE runtime deviceConfig.xml XSD_runtime XSLT_runtime;
 #DATASTORE status  status.xml       XSD_status  XSLT_status;
 
