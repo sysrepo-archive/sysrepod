@@ -152,7 +152,7 @@
 
      The constrains checks will also be performed when a client modifies the data store using API.
      Another way to check this constraint is by trying to remove both <interface> nodes present
-     in 'runtime' data store. The attempt should fail. There is sample program to test constraint
+     in 'runtime' data store. The attempt should fail. There is a sample program to test constraint
      failure via API. To run this example, follow the instructions:
          To run server, "cd server" and execute "./sysrepod param". In another xterm window, type:
          cd client_SRD
