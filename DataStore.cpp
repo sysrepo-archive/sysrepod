@@ -520,14 +520,27 @@ DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, char *log)
 {
 	int retValue;
 	xmlXPathObjectPtr objset;
+	xmlDocPtr orgDoc;
 
 	log[0] = '\0';
 	if (lockDS(cinfo)){
 		sprintf (log, "Error in locking data store");
 		return -1;
     }
+	orgDoc = doc;
+	// create a duplicate of orgDoc
+    doc = xmlCopyDoc (orgDoc, 1);
+	if (doc == NULL){
+		doc = orgDoc;
+		sprintf (log, "Error in creating a duplicate DOM tree.");
+		unlockDS (cinfo);
+		return -1;
+	}
+
 	objset = getNodeSet (xpath, log);
 	if (!objset){
+		xmlFreeDoc (doc);
+		doc = orgDoc;
 		// error or result is an empty set
 		if (strcmp(log, "No result") == 0){
 			retValue = 0;
@@ -537,6 +550,18 @@ DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, char *log)
 	    retValue = deleteSelectedNodes (objset->nodesetval);
 	    if (!retValue){
 	    	sprintf (log, "No result");
+	    	xmlFreeDoc (doc);
+	    	doc = orgDoc;
+	    } else {
+	    	// doc modified - apply contraints
+	    	if (applyConstraints ()){
+	    		xmlFreeDoc (orgDoc);
+	    	} else {
+	    		xmlFreeDoc (doc);
+	    		doc = orgDoc;
+	    		sprintf (log, "One or more contraint failed. No changes made.");
+	    		retValue = -1;
+	    	}
 	    }
 	}
 
@@ -603,14 +628,26 @@ DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newVa
 {
 	int retValue = -1;
 	xmlXPathObjectPtr objset;
+	xmlDocPtr orgDoc;
 
 	log[0] = '\0';
 	if (lockDS(cinfo)){
 		sprintf (log, "Error in locking data store");
 		return -1;
     }
+	orgDoc = doc;
+    // create a duplicate of orgDoc
+	doc = xmlCopyDoc (orgDoc, 1);
+	if (doc == NULL){
+		doc = orgDoc;
+		sprintf (log, "Error in creating a duplicate DOM tree.");
+		unlockDS (cinfo);
+		return -1;
+	}
 	objset = getNodeSet (xpath, log);
 	if (!objset){
+		xmlFreeDoc (doc);
+		doc = orgDoc;
 		// error or result is an empty set
 		if (strcmp(log, "No result") == 0){
 			retValue = 0;
@@ -619,9 +656,23 @@ DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newVa
 		// update chosen nodes
 	    retValue = udpateSelectedNodes (objset->nodesetval, newValue);
 	    if (retValue == 0){
+	    	xmlFreeDoc (doc);
+	    	doc = orgDoc;
 	    	sprintf (log, "No result");
 	    } else if (retValue < 0){
+	    	xmlFreeDoc (doc);
+	    	doc = orgDoc;
 	    	sprintf (log, "Error in adding nodes");
+	    } else {
+	    	// doc successfully modified - apply contraints
+	    	if (applyConstraints()){
+	    		xmlFreeDoc (orgDoc);
+	    	} else {
+	    		xmlFreeDoc (doc);
+	    		doc = orgDoc;
+	    		retValue = -1;
+	    		sprintf (log, "One or more constraints failed. No changes made.");
+	    	}
 	    }
 	}
 
@@ -643,6 +694,7 @@ DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML,
 	int i;
 	xmlNode *cur_node;
 	int count = 0;
+	xmlDocPtr orgDoc;
 
 	log[0] = '\0';
 	if (xpath == NULL || nodeSetXML == NULL || strlen ((char *)xpath) < 1 || strlen(nodeSetXML) < 1){
@@ -663,17 +715,35 @@ DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML,
 	}
 	if (lockDS(cinfo)){
 		sprintf (log, "Error in locking data store");
+		xmlFreeDoc (newDoc);
 		return -1;
 	}
+
+	orgDoc = doc;
+	// create a duplicate of orgDoc
+    doc = xmlCopyDoc (orgDoc, 1);
+	if (doc == NULL){
+		doc = orgDoc;
+		sprintf (log, "Error in creating a duplicate DOM tree.");
+		xmlFreeDoc (newDoc);
+		unlockDS (cinfo);
+		return -1;
+	}
+
 	// apply xpath and get nodeset
 	objset =  getNodeSet (xpath, log);
 	if (!objset){
+		xmlFreeDoc (doc);
+		doc = orgDoc;
 		xmlFreeDoc (newDoc);
 		unlockDS(cinfo);
 		return 0;
 	}
 	nodeSet = objset->nodesetval;
 	if (nodeSet == NULL || xmlXPathNodeSetIsEmpty(nodeSet)){
+		xmlFreeDoc (doc);
+		doc = orgDoc;
+		xmlFreeDoc (newDoc);
 		unlockDS(cinfo);
 		return 0;
 	}
@@ -695,6 +765,16 @@ DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML,
 	    	}
 
 	    }
+	}
+	xmlFreeDoc (newDoc);
+	// check constraints
+	if (applyConstraints ()){
+		xmlFreeDoc (orgDoc);
+	} else {
+		xmlFreeDoc (doc);
+		doc = orgDoc;
+		count = -1;
+		sprintf (log, "One or more constraints failed. No changes done to Data Store.");
 	}
 	// for testing dump doc
 	// xmlDocDump (stdout, doc);

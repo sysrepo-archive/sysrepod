@@ -145,3 +145,16 @@
         Warning: Constraints failed. Data store will not be created.
         Warning in creating a new data store: runtime
         Warning: Could not add data store runtime
+
+     To test the semantic constraints, run the following command:
+         cd server
+         ./sysrepod param
+
+     The constrains checks will also be performed when a client modifies the data store using API.
+     Another way to check this constraint is by trying to remove both <interface> nodes present
+     in 'runtime' data store. The attempt should fail. There is sample program to test constraint
+     failure via API. To run this example, follow the instructions:
+         To run server, "cd server" and execute "./sysrepod param". In another xterm window, type:
+         cd client_SRD
+         ./deleteNodeConstraintFailTest
+     You will semantic constraint violation. No changes will be made to 'runtime' data store.
