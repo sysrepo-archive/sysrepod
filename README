@@ -66,7 +66,7 @@
        
        You will see the results of XPath in this XTerm window.
   
-  12) INSTRUCTIONS to run a performance test on a huge data store with 20,000 xml nodes and a query that retrieves
+ 12) INSTRUCTIONS to run a performance test on a huge data store with 20,000 xml nodes and a query that retrieves
        
     You will see that the query is answered in an instant. The reply is calculated, transmitted, and parsed in milli-seconds.
        
@@ -89,7 +89,7 @@
     and just follow the same instructions to execute XPATH to check the performance of SYSREPOD server.     
 
        
-  13) INSTRUCTIONS to run a signal test: SIGHUP is registed with the server by a client. 
+ 13) INSTRUCTIONS to run a signal test: SIGHUP is registed with the server by a client. 
     It causes the server to send the signal to the client whenever the Data Store is modified.
        
     a) To start server, execute:
@@ -101,11 +101,11 @@
        cd client_SRD
        ./signalTest
        
-  14) INSTRUCTIONS to run an XSLT test: It applies an XSLT to the data store and prints results.
-      This XSLT filters all LEAF nodes and prints "name" and "value" pairs separated by ':' on
-      a separate line. XSLT's can be used to generate XML, HTML, and flat data suitable for consumption
-      by conventional program like SSHD.
-      Note that XSLT must be enclosed within CDATA clause.
+ 14) INSTRUCTIONS to run an XSLT test: It applies an XSLT to the data store and prints results.
+     This XSLT filters all LEAF nodes and prints "name" and "value" pairs separated by ':' on
+     a separate line. XSLT's can be used to generate XML, HTML, and flat data suitable for consumption
+     by conventional program like SSHD.
+     Note that XSLT must be enclosed within CDATA clause.
        
     a) To start server, execute:
        cd server
@@ -116,4 +116,32 @@
        cd client_SRD
        ./xsltTest
 
-       
+ 15) SEMATIC CONSTRAINTS: An example of a semantic constraint on a data store is that the number of
+     <interface> nodes must be greater than 1. Arbitrarily complex semantic constraints can
+     be expressed using XSLT as it is a full-fledged programming language. We assume that XSLT
+     generates <ok/> xml if the constraints are met. If constraints are not met, the generated xml
+     should not contain <ok/> node. Constriaints are expressed by a third parameter in the parameter
+     file within the line defining a data store. For example:
+
+        DATASTORE runtime deviceConfig.xml checkDir; 
+
+     defines a data store 'runtime', its XML, and the third parameter is a directory path 'checkDir'.
+     Since, the current dir for server is './server', 'checkDir' exists under './server'.
+     This dir may contains XSD, DSDL & XSLT files specifying Data Store's syntactic and semantic 
+     contraints (all files in one directory). In the dir, the file extensions will tell the server 
+     what to do with them. Note that this third parameter, a dir path, is optional.
+
+     Currently, only the processing of XSLT is implemented. 'checkDir' contains one sample XSL file
+     checking that the data store must have at least one 1 <interface> node. For a -ve test, you can
+     edit this XSL file and replace 8th line with the following line:
+
+         <xsl:when test="$num &gt; 3">
+
+     This new line expresses that the number of <interface> nodes must be more than 3. With the given XML 
+     for 'runtime' data store, this constraint will fail and server will not create the data store
+     printing the following error message:
+
+        XSL sheet checkDir/deviceConfigSemanticCheck.xsl generated semantic error.
+        Warning: Constraints failed. Data store will not be created.
+        Warning in creating a new data store: runtime
+        Warning: Could not add data store runtime

@@ -19,11 +19,12 @@ MAXDATASTORES 50;
 # Max number of operational data stores
 MAXOPDATASTORES 25;
 
-# Define data stores: Data Store Name, its xmlData file, XSD dir, and XSLT dir
-DATASTORE runtime deviceConfig.xml;
+# Define data stores: Data Store Name, its xmlData file, a dir that contains XSD, DSDL & XSLT
+# files specifying Data Store's syntactic and semantic contraints (all files in one directory)
+# In the dir, the file extensions will tell the server what to do with them.
+# The dir parameter is optional.
+DATASTORE runtime deviceConfig.xml checkDir;
 DATASTORE huge    huge.xml;
 DATASTORE sshd    sshd.xml;
 DATASTORE sshd_config    sshd_config.xml;
-#DATASTORE runtime deviceConfig.xml XSD_runtime XSLT_runtime;
-#DATASTORE status  status.xml       XSD_status  XSLT_status;
 

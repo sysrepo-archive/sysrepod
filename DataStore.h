@@ -24,19 +24,20 @@ private:
 	// Need a mutex to control access to the data store from multiple threads
 	pthread_mutex_t dsMutex;
 	char fileName[PATHLEN + 1];
-	char xsdDir [PATHLEN + 1];
-	char xsltDir[PATHLEN +1];
+	char checkDir [PATHLEN + 1]; // dir that contains XSD, DSDL, and XSLT files for
+	                             // checking constraints
 	int udpateSelectedNodes (xmlNodeSetPtr nodes, xmlChar *newValue);
 	struct ClientInfo *lockedBy;
 
 	xmlXPathObjectPtr getNodeSet (xmlChar *xpath, char *log);
+	xmlXPathObjectPtr getNodeSet (xmlDocPtr doc, xmlChar *xpath);
 	void removeChar(char *str, char ch);
 public:
 	// DOM treee that contains the data
 	xmlDocPtr doc;
 	char name[MAXDATASTORENAMELEN + 1];
 
-	DataStore(char *filename, char *dsname, char * xsddir, char *xsltdir);
+	DataStore(char *filename, char *dsname, char * checkdir);
 	DataStore (char *dsname);
 	virtual ~DataStore();
 	bool initialize (void);
@@ -51,6 +52,8 @@ public:
 	int addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, char *log);
 	int deleteNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *log);
 	int deleteSelectedNodes (xmlNodeSetPtr nodes);
+	bool applyConstraints (void);
+	bool applyXSLT (char *filePath);
 };
 
 #endif /* DATASTORE_H_ */

@@ -91,7 +91,7 @@ DataStoreSet::addDataStoreFromString (char *name, char *xml)
 
 // Do not use log system as it may not be created yet.
 bool
-DataStoreSet::addDataStoreFromFile (char *name, char *inFile, char *xsdDir, char *xsltDir)
+DataStoreSet::addDataStoreFromFile (char *name, char *inFile, char *checkDir)
 {
 	if(pthread_mutex_lock(&dsMutex)){
 		printf ("Unable to lock data store set.\n");
@@ -107,7 +107,7 @@ DataStoreSet::addDataStoreFromFile (char *name, char *inFile, char *xsdDir, char
 		pthread_mutex_unlock(&dsMutex);
 		return false;
 	}
-    dataStoreList[count] = new DataStore(name, inFile, xsdDir, xsltDir);
+    dataStoreList[count] = new DataStore(name, inFile, checkDir);
     if (dataStoreList[count] == NULL || !dataStoreList[count]->initialize()){
     	delete dataStoreList[count];
     	dataStoreList[count] = NULL;
