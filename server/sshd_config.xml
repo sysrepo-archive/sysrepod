@@ -1,18 +1,105 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"><sshd_config_options xmlns="urn:ietf:params:xml:ns:yang:ssh:sshd_config"><AcceptEnv /><AddressFamily>any</AddressFamily><AllowAgentForwarding>yes</AllowAgentForwarding><AllowGroups /><AllowTcpForwarding>yes</AllowTcpForwarding><AllowUsers /><AuthenticationMethods /><AuthorizedKeysCommand /><AuthorizedKeysCommandUser /><AuthorizedKeysFile /><AuthorizedPrincipalsFile /><Banner /><ChallengeResponseAuthentication>yes</ChallengeResponseAuthentication><ChrootDirectory /><Ciphers>aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,\
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <sshd_config_options>
+    <AcceptEnv/>
+    <AddressFamily>any</AddressFamily>
+    <AllowAgentForwarding>yes</AllowAgentForwarding>
+    <AllowGroups/>
+    <AllowTcpForwarding>yes</AllowTcpForwarding>
+    <AllowUsers/>
+    <AuthenticationMethods/>
+    <AuthorizedKeysCommand/>
+    <AuthorizedKeysCommandUser/>
+    <AuthorizedKeysFile/>
+    <AuthorizedPrincipalsFile/>
+    <Banner/>
+    <ChallengeResponseAuthentication>yes</ChallengeResponseAuthentication>
+    <ChrootDirectory/>
+    <Ciphers>aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,\
        aes128-gcm@openssh.com,aes256-gcm@openssh.com, \
        chacha20-poly1305@openssh.com,\
        aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc,aes192-cbc,\
-       aes256-cbc,arcfour</Ciphers><ClientAliveCountMax>3</ClientAliveCountMax><ClientAliveInterval>0</ClientAliveInterval><Compression>delayed</Compression><DebianBanner>yes</DebianBanner><DenyGroups /><DenyUsers /><ForceCommand /><GatewayPorts>no</GatewayPorts><GSSAPIAuthentication>no</GSSAPIAuthentication><GSSAPIKeyExchange>no</GSSAPIKeyExchange><GSSAPICleanupCredentials>yes</GSSAPICleanupCredentials><GSSAPIStrictAcceptorCheck>yes</GSSAPIStrictAcceptorCheck><GSSAPIStoreCredentialsOnRekey>no</GSSAPIStoreCredentialsOnRekey><HostbasedAuthentication>no</HostbasedAuthentication><HostbasedUsesNameFromPacketOnly>no</HostbasedUsesNameFromPacketOnly><HostCertificate /><HostKey /><HostKeyAgent /><IgnoreRhosts>yes</IgnoreRhosts><IgnoreUserKnownHosts>no</IgnoreUserKnownHosts><IPQoS>lowdelay</IPQoS><KbdInteractiveAuthentication>yes</KbdInteractiveAuthentication><KerberosAuthentication>no</KerberosAuthentication><KerberosGetAFSToken>no</KerberosGetAFSToken><KerberosOrLocalPasswd>yes</KerberosOrLocalPasswd><KerberosTicketCleanup>yes</KerberosTicketCleanup><KexAlgorithms>curve25519-sha256@libssh.org,\
+       aes256-cbc,arcfour</Ciphers>
+    <ClientAliveCountMax>3</ClientAliveCountMax>
+    <ClientAliveInterval>0</ClientAliveInterval>
+    <Compression>delayed</Compression>
+    <DebianBanner>yes</DebianBanner>
+    <DenyGroups/>
+    <DenyUsers/>
+    <ForceCommand/>
+    <GatewayPorts>no</GatewayPorts>
+    <GSSAPIAuthentication>no</GSSAPIAuthentication>
+    <GSSAPIKeyExchange>no</GSSAPIKeyExchange>
+    <GSSAPICleanupCredentials>yes</GSSAPICleanupCredentials>
+    <GSSAPIStrictAcceptorCheck>yes</GSSAPIStrictAcceptorCheck>
+    <GSSAPIStoreCredentialsOnRekey>no</GSSAPIStoreCredentialsOnRekey>
+    <HostbasedAuthentication>no</HostbasedAuthentication>
+    <HostbasedUsesNameFromPacketOnly>no</HostbasedUsesNameFromPacketOnly>
+    <HostCertificate/>
+    <HostKey/>
+    <HostKeyAgent/>
+    <IgnoreRhosts>yes</IgnoreRhosts>
+    <IgnoreUserKnownHosts>no</IgnoreUserKnownHosts>
+    <IPQoS>lowdelay</IPQoS>
+    <KbdInteractiveAuthentication>yes</KbdInteractiveAuthentication>
+    <KerberosAuthentication>no</KerberosAuthentication>
+    <KerberosGetAFSToken>no</KerberosGetAFSToken>
+    <KerberosOrLocalPasswd>yes</KerberosOrLocalPasswd>
+    <KerberosTicketCleanup>yes</KerberosTicketCleanup>
+    <KexAlgorithms>curve25519-sha256@libssh.org,\
 ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,\
 diffie-hellman-group-exchange-sha256,\
 diffie-hellman-group-exchange-sha1,\
 diffie-hellman-group14-sha1,\
-diffie-hellman-group1-sha1</KexAlgorithms><KeyRegenerationInterval>3600</KeyRegenerationInterval><ListenAddress>host|IPv4_addr|IPv6_addr</ListenAddress><LoginGraceTime>120</LoginGraceTime><LogLevel>QUIET</LogLevel><MACs>hmac-md5-etm@openssh.com,hmac-sha1-etm@openssh.com,\
+diffie-hellman-group1-sha1</KexAlgorithms>
+    <KeyRegenerationInterval>3600</KeyRegenerationInterval>
+    <ListenAddress>host|IPv4_addr|IPv6_addr</ListenAddress>
+    <LoginGraceTime>120</LoginGraceTime>
+    <LogLevel>QUIET</LogLevel>
+    <MACs>hmac-md5-etm@openssh.com,hmac-sha1-etm@openssh.com,\
 umac-64-etm@openssh.com,umac-128-etm@openssh.com,\
 hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,\
 hmac-ripemd160-etm@openssh.com,hmac-sha1-96-etm@openssh.com,\
 hmac-md5-96-etm@openssh.com,\
 hmac-md5,hmac-sha1,umac-64@openssh.com,umac-128@openssh.com,\
 hmac-sha2-256,hmac-sha2-512,hmac-ripemd160,\
-hmac-sha1-96,hmac-md5-96</MACs><Match /><MaxAuthTries>6</MaxAuthTries><MaxSessions>10</MaxSessions><MaxStartups>10</MaxStartups><OS>Unknown</OS><PasswordAuthentication>yes</PasswordAuthentication><PermitEmptyPasswords>no</PermitEmptyPasswords><PermitOpen /><PermitRootLogin>yes</PermitRootLogin><PermitTunnel>no</PermitTunnel><PermitTTY>yes</PermitTTY><PermitUserEnvironment>no</PermitUserEnvironment><PidFile /><Port>22</Port><PrintLastLog>yes</PrintLastLog><PrintMotd>yes</PrintMotd><Protocol>2</Protocol><PubkeyAuthentication>yes</PubkeyAuthentication><RekeyLimit>default none</RekeyLimit><RevokedKeys /><RhostsRSAAuthentication>no</RhostsRSAAuthentication><RSAAuthentication>yes</RSAAuthentication><ServerKeyBits>1024</ServerKeyBits><StrictModes>yes</StrictModes><Subsystem /><SyslogFacility>AUTH</SyslogFacility><TCPKeepAlive>yes</TCPKeepAlive><TrustedUserCAKeys /><UseDNS>yes</UseDNS><UseLogin>no</UseLogin><UsePAM>no</UsePAM><UsePrivilegeSeparation>yes</UsePrivilegeSeparation><VersionAddendum /><X11DisplayOffset>10</X11DisplayOffset><X11Forwarding>no</X11Forwarding><X11UseLocalhost>yes</X11UseLocalhost><XAuthLocation /></sshd_config_options></data>
+hmac-sha1-96,hmac-md5-96</MACs>
+    <Match/>
+    <MaxAuthTries>6</MaxAuthTries>
+    <MaxSessions>10</MaxSessions>
+    <MaxStartups>10</MaxStartups>
+    <OS>Unknown</OS>
+    <PasswordAuthentication>yes</PasswordAuthentication>
+    <PermitEmptyPasswords>no</PermitEmptyPasswords>
+    <PermitOpen/>
+    <PermitRootLogin>yes</PermitRootLogin>
+    <PermitTunnel>no</PermitTunnel>
+    <PermitTTY>yes</PermitTTY>
+    <PermitUserEnvironment>no</PermitUserEnvironment>
+    <PidFile/>
+    <Port>22</Port>
+    <PrintLastLog>yes</PrintLastLog>
+    <PrintMotd>yes</PrintMotd>
+    <Protocol>2</Protocol>
+    <PubkeyAuthentication>yes</PubkeyAuthentication>
+    <RekeyLimit>default none</RekeyLimit>
+    <RevokedKeys/>
+    <RhostsRSAAuthentication>no</RhostsRSAAuthentication>
+    <RSAAuthentication>yes</RSAAuthentication>
+    <ServerKeyBits>1024</ServerKeyBits>
+    <StrictModes>yes</StrictModes>
+    <Subsystem/>
+    <SyslogFacility>AUTH</SyslogFacility>
+    <TCPKeepAlive>yes</TCPKeepAlive>
+    <TrustedUserCAKeys/>
+    <UseDNS>yes</UseDNS>
+    <UseLogin>no</UseLogin>
+    <UsePAM>no</UsePAM>
+    <UsePrivilegeSeparation>yes</UsePrivilegeSeparation>
+    <VersionAddendum/>
+    <X11DisplayOffset>10</X11DisplayOffset>
+    <X11Forwarding>no</X11Forwarding>
+    <X11UseLocalhost>yes</X11UseLocalhost>
+    <XAuthLocation/>
+  </sshd_config_options>
+</config>
