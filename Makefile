@@ -2,8 +2,9 @@ CXX = g++
 CC = gcc
 AR = ar
 LIBXML2_INCLUDE_PATH = /usr/include/libxml2
+PREFIX = /usr
 
-all: sysrepod client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/opDStoreGetSubTree client_SRD/hugeTest client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest  server/genHuge install
+all: sysrepod client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/opDStoreGetSubTree client_SRD/hugeTest client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest  server/genHuge
 
 clean:
 	rm -f *.o sysrepod libsrd.a server/sysrepod server/genHuge client_SRD/hugeTest client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest client_SRD/opDStoreGetSubTree client_SRD/*.o
@@ -108,6 +109,8 @@ libsrd.a: srd.o
 	$(AR) rcs libsrd.a srd.o
 	
 install: sysrepod
-	cp sysrepod server
-	
-	
+	install -d $(DESTDIR)/$(PREFIX)/bin/
+	cp sysrepod $(DESTDIR)/$(PREFIX)/bin/
+	install -d $(DESTDIR)/etc/sysrepod/
+	cp server/param $(DESTDIR)/etc/sysrepod
+
