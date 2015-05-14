@@ -6,7 +6,7 @@ LIBXML2_INCLUDE_PATH = /usr/include/libxml2
 all: sysrepod client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/opDStoreGetSubTree client_SRD/hugeTest client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest  server/genHuge install
 
 clean:
-	rm *.o sysrepod libsrd.a server/sysrepod server/genHuge client_SRD/hugeTest client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest client_SRD/opDStoreGetSubTree client_SRD/*.o
+	rm -f *.o sysrepod libsrd.a server/sysrepod server/genHuge client_SRD/hugeTest client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest client_SRD/opDStoreGetSubTree client_SRD/*.o
 
 sysrepod: common.o mainSysRepoD.o ClientSet.o DataStore.o DataStoreSet.o Client.o ClientSRD.o global.h application.h OpDataStore.o OpDataStoreSet.o
 	$(CXX) -g -o sysrepod mainSysRepoD.o common.o ClientSet.o DataStore.o DataStoreSet.o OpDataStore.o OpDataStoreSet.o Client.o ClientSRD.o -pthread -lxml2 -lxslt
