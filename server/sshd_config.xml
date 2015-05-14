@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<config>
-  <sshd_config_options>
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <sshd_config_options xmlns="urn:ietf:params:xml:ns:yang:ssh:sshd_config">
     <AcceptEnv/>
     <AddressFamily>any</AddressFamily>
     <AllowAgentForwarding>yes</AllowAgentForwarding>
