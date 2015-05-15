@@ -14,6 +14,7 @@
 #include "application.h"
 #include "ClientSRD.h"
 
+
 class ClientSet {
 private:
 	pthread_mutex_t csMutex;

@@ -29,7 +29,7 @@ int main(int argc, char**argv)
    char defaultServerIP []="127.0.0.1";
    char *serverIP;
    int serverPort = SRD_DEFAULTSERVERPORT;
-   char dataStoreName [100] = "sshd_config";
+   char dataStoreName [100] = "sshd_1";
    char xslt [500];
    char *buff = NULL;
 

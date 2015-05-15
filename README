@@ -116,7 +116,7 @@
        cd client_SRD
        ./xsltTest
 
- 15) SEMATIC CONSTRAINTS: An example of a semantic constraint on a data store is that the number of
+ 15) SEMANTIC CONSTRAINTS USING XSLT: An example of a semantic constraint is that the number of
      <interface> nodes must be greater than 1. Arbitrarily complex semantic constraints can
      be expressed using XSLT as it is a full-fledged programming language. We assume that XSLT
      generates <ok/> xml if the constraints are met. If constraints are not met, the generated xml
@@ -158,3 +158,43 @@
          cd client_SRD
          ./deleteNodeConstraintFailTest
      You will semantic constraint violation. No changes will be made to 'runtime' data store.
+
+16)  SEMANTIC CONSTRAINTS USING YANG: Semantic constraints are expressed in a Yang model. 
+     Pyang and Jing tools are used to apply these semantic contraints when the data store is 
+     created or modified. To install these tools, use the following commands:
+
+     sudo apt-get install jing
+     git clone git://github.com/mbj4668/pyang.git
+
+     To set environment variables for Pyang and run sysrepod, use the following commands:
+     
+     cd <pyang-dir>
+     ./env.sh
+     cd <sysrepod/server>
+     ./sysrepod param
+
+     To use Yang based constraint verification, let us consider the following in the server/param
+     file:
+
+     DATASTORE sshd_config  sshd---config.xml  xsltDir  yangDirFor_sshd_config;
+
+     Here, ssh_config is the name of the data store to be created.
+     sshd---config.xml is used to create the contents of the data store.
+     xslDir may be used to store a set of XSL files for custom constraint verification.
+     Create xslDir directory under 'server'.
+     'yangDirFor_sshd_config' directory is created to store a yang model for 'sshd_config' data store.
+     The name of the file must be '<dataStore Name>.yang'. In this case, it would be 
+     'sshd_config.yang'. 
+
+     Now 'sshd_config' data store is ready for yang based constrained verification. There is an example
+     implemented in 'client_SRD/mainYangTest.c' file. This example, tries to add a new node that
+     violates yang model. After starting sysrepod server as mentioned above, start the client to
+     test yang model using the following command:
+
+     cd client_SRD
+     ./yangTest
+
+     The test will report that the act of adding a new node failed as it violates constraints. 
+
+     NOTE that there may be many constraints that can not be expressed in Yang Model. One can use
+     XSLT based constraints as described under 15) above to express any constraint.

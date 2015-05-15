@@ -19,12 +19,16 @@ MAXDATASTORES 50;
 # Max number of operational data stores
 MAXOPDATASTORES 25;
 
-# Define data stores: Data Store Name, its xmlData file, a dir that contains XSD, DSDL & XSLT
-# files specifying Data Store's syntactic and semantic contraints (all files in one directory)
-# In the dir, the file extensions will tell the server what to do with them.
-# The dir parameter is optional.
+# Define data stores: Data Store Name, its xmlData file, a dir that contains XSLT
+# files specifying Data Store's syntactic and semantic contraints (all files in one directory),
+# and another dir where Yang model is present with name <data_store>.yang. Both dir names
+# are optional. If yangdir is present then xsldir must be present. xsldir may be empty.
+# NOTE that data store name must be same as the BASE of yang file in yangdir.
+# For example, yangDirFor_sshd_config dir must contain a file 'sshd_config.yang'.
+# The name of XML file and xsltdir could be any string.
+
 DATASTORE runtime deviceConfig.xml checkDir;
 DATASTORE huge    huge.xml;
 DATASTORE sshd    sshd.xml;
-DATASTORE sshd_config    sshd_config.xml;
-
+DATASTORE sshd_1  sshd_1.xml;
+DATASTORE sshd_config  sshd---config.xml  xsltDir  yangDirFor_sshd_config;

@@ -1,0 +1,59 @@
+MODULES = $(BASE).yang
+TARGET ?= config
+bn = $(BASE)
+schemas = $(bn).rng $(BASE)-gdefs-config.rng $(bn)-dsrl.xsl $(bn)-sch.xsl
+tgt = --stringparam target $(TARGET)
+rngparms =  $(tgt) --stringparam basename $(BASE) --stringparam schema-dir \
+	$(PYANG_RNG_LIBDIR) $(PYANG_XSLT_DIR)/gen-relaxng.xsl
+SKELOPTS = --sample-xml-skeleton-defaults --sample-xml-skeleton-doctype=config
+
+# all: $(bn).xml $(schemas) validate
+all: $(schemas) validate
+
+rnc: $(bn).rnc
+
+skel: $(bn)-skel.xml
+
+tree: model.tree
+
+$(bn)-skel.xml: $(MODULES)
+	@pyang -f sample-xml-skeleton $(SKELOPTS) $^ | \
+	    xmllint --output $@ --format -
+
+model.tree: $(MODULES)
+	@pyang -o $@ -f tree $^
+
+$(bn).dsdl: $(MODULES)
+	@pyang -f dsdl -o $@ --dsdl-no-documentation --dsdl-no-dublin-core $^
+
+$(bn).rng: $(bn).dsdl
+	@xsltproc --output $@ $(rngparms) $<
+
+$(BASE)-gdefs-config.rng: $(bn).dsdl
+	@xsltproc --output $@ --stringparam gdefs-only 1 $(rngparms) $<
+
+$(bn).rnc: $(bn).rng $(BASE)-gdefs-config.rng
+	@trang -I rng -O rnc $< $@
+
+$(bn)-dsrl.xsl: $(bn).dsdl
+	@xsltproc $(tgt) $(PYANG_XSLT_DIR)/gen-dsrl.xsl $< | \
+	    xsltproc --output $@ $(PYANG_XSLT_DIR)/dsrl2xslt.xsl -
+
+$(bn)-sch.xsl: $(bn).dsdl
+	@xsltproc $(tgt) $(PYANG_XSLT_DIR)/gen-schematron.xsl $< | \
+	    xsltproc $(PYANG_XSLT_DIR)/iso_abstract_expand.xsl - | \
+            xsltproc -o $@ $(PYANG_XSLT_DIR)/iso_svrl_for_xslt1.xsl -
+
+# validate: $(bn).xml $(schemas)
+validate: $(bn).xml $(schemas)
+	@jing $(bn).rng $<
+	@xsltproc $(bn)-dsrl.xsl $< | xsltproc $(bn)-sch.xsl - | \
+	    xsltproc $(PYANG_XSLT_DIR)/svrl2text.xsl -
+
+$(bn).xml:
+	
+
+
+clean:
+	@rm -f $(schemas) $(bn)-skel.xml $(bn).dsdl result result1 $(BASE).xml\
+	    model.tree *.rnc 

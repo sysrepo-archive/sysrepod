@@ -28,7 +28,7 @@ public:
 	virtual ~DataStoreSet();
 
 	bool initialize (int number);
-	bool addDataStoreFromFile (char *name, char *inFile, char *checkDir);
+	bool addDataStoreFromFile (char *name, char *inFile, char *checkDir, char *yangDir);
 	bool addDataStoreFromString (char *name, char *xml);
 	DataStore *getDataStore (char *name);
 	char *getList (void);

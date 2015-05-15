@@ -246,7 +246,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		if(param1 == NULL){
 			sprintf (outBuffer, "<xml><error>XPath not found</error></xml>");
 		} else {
-			char  log[100];
+			char  log[MAXDATASTORENAMELEN + 100];
 			int   param2BuffSize = 100;
 			char *param2Value = NULL;
 
@@ -261,7 +261,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			    } else if (cinfo->dataStore == NULL){
 			   	   sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
 			    } else {
-			   	   if ((n = (cinfo->dataStore->addNodes ((struct ClientInfo *)cinfo, param1, param2Value, log))) < 0){
+			   	   if ((n = (cinfo->dataStore->addNodes ((struct ClientInfo *)cinfo, param1, param2Value, log, MAXDATASTORENAMELEN))) < 0){
 			   			sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
 			   	   } else {
 			   			sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
@@ -280,10 +280,10 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			if(param1 == NULL){
 				sprintf (outBuffer, "<xml><error>XPath not found</error></xml>");
 			} else {
-				char  log[100];
+				char  log[MAXDATASTORENAMELEN+ 100];
 				if (cinfo->dataStore == NULL){
 					sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
-				} else if ((n = (cinfo->dataStore->deleteNodes ((struct ClientInfo *)cinfo, param1, log))) < 0){
+				} else if ((n = (cinfo->dataStore->deleteNodes ((struct ClientInfo *)cinfo, param1, log,MAXDATASTORENAMELEN))) < 0){
 				   	 sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
 				} else {
 				   	 sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
@@ -318,7 +318,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		    sprintf (outBuffer, "<xml><error>Value of xpath not found</error></xml>");
 		    common::SendMessage(cinfo->sock, outBuffer);
 		} else {
-			char log[100];
+			char log[MAXDATASTORENAMELEN+100];
 			strcpy ((char *) xpath, "/xml/param2");
 			param2 = ClientSet::GetFirstNodeValue(doc, xpath);
 			if(param2 == NULL){
@@ -330,7 +330,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 				xmlFree (param2);
 			} else {
 				int numNodesModified;
-                numNodesModified = cinfo->dataStore->updateNodes ((struct ClientInfo *)cinfo, param1, param2, log);
+                numNodesModified = cinfo->dataStore->updateNodes ((struct ClientInfo *)cinfo, param1, param2, log, MAXDATASTORENAMELEN);
                 if (numNodesModified < 0){
                 	sprintf (outBuffer, "<xml><error>Error in modifying nodes: %s</error></xml>", log);
                 } else {

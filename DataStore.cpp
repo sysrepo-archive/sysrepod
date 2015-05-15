@@ -20,7 +20,7 @@
 
 // DO NOT USE GLOBAL LOGGING MECHANISM IN THIS FILE
 
-DataStore::DataStore(char *dsname, char * filename, char *checkdir)
+DataStore::DataStore(char *dsname, char * filename, char *checkdir, char *yangdir)
 {
    doc = NULL;
    if (filename == NULL || strlen(filename) > PATHLEN){
@@ -40,6 +40,12 @@ DataStore::DataStore(char *dsname, char * filename, char *checkdir)
    	   checkDir[0] = '\0';
    } else {
        strcpy (checkDir, checkdir);
+   }
+   if (yangdir == NULL || strlen(yangdir) > PATHLEN){
+   	   printf ("YANG Dir path for Data Store '%s' is longer than the limit %d. or NULL\n", name, PATHLEN);
+       yangDir[0] = '\0';
+   } else {
+       strcpy (yangDir, yangdir);
    }
    lockedBy = NULL;
 }
@@ -98,6 +104,7 @@ DataStore::initialize (char *xml)
 bool
 DataStore::initialize ()
 {
+	char log[MAXYANGERRORLEN+100];
 	pthread_mutexattr_t Attr;
 	pthread_mutexattr_init(&Attr);
 	pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -112,8 +119,10 @@ DataStore::initialize ()
 	}
 
 	// Apply constraints on doc to make sure it is correct
-	if (!applyConstraints ()){
+	log[0] = '\0';
+	if (!applyConstraints (log, MAXYANGERRORLEN)){
 		printf ("Warning: Constraints failed. Data store will not be created.\n");
+		if (strlen(log) > 0) printf ("%s\n", log);
 		return false;
 	}
 
@@ -129,7 +138,7 @@ DataStore::initialize ()
 }
 
 bool
-DataStore::applyConstraints (void)
+DataStore::applyConstraints (char *log, int logLen)
 {
 	DIR * dirp;
 	struct dirent *entry;
@@ -140,7 +149,7 @@ DataStore::applyConstraints (void)
 	if (strlen(checkDir) < 1) return true;
 	dirp = opendir(checkDir);
 	if (dirp == NULL){
-		fprintf(stderr, "Could not find number of files in the directory.\n");
+		sprintf(log, "Could not find number of files in the directory.\n");
 		return false;
 	}
 	while ((entry = readdir(dirp)) != NULL) {
@@ -156,22 +165,129 @@ DataStore::applyConstraints (void)
             strcat (fullPath, entry->d_name);
             if (strcmp(extPtr, ".xsl") == 0){
             	if (!applyXSLT (fullPath)) {
-            		printf ("XSL sheet %s generated semantic error.\n", fullPath);
+            		if (strlen(fullPath)+50 < logLen){
+            		    sprintf (log, "XSL sheet %s generated semantic error.\n", fullPath);
+            		}
             		retValue = false;
             		break;
             	}
-            } else if (strcmp(extPtr, ".xsd") == 0){
-            	printf ("Yet to be implement xsd processing for %s.\n", fullPath);
-            } else if (strcmp(extPtr, ".dsdl") == 0){
-                printf ("Yet to be implement dsdl processing for %s.\n", fullPath);
-            } else {
-            	printf ("Warning: No check made. Extension %s not recognized.\n", extPtr);
             }
 		}
     }
 	closedir(dirp);
 	xsltCleanupGlobals();
 	xmlCleanupParser();
+	if (retValue == false) return retValue;
+
+	// so far all is good: let us test syntax and semantics using YANG model if sepcified
+	if (strlen(yangDir) < 1){
+		// yang dir not specified
+		return true;
+	}
+	dirp = opendir (yangDir);
+	if (dirp == NULL){
+		sprintf(log, "Could not open YANG directory. Could not check data store against Yang Model.\n");
+		return false;
+	}
+	while ((entry = readdir(dirp)) != NULL) {
+		extPtr = NULL;
+		extPtr = strchr (entry->d_name, '.');
+		if (extPtr == NULL || *extPtr != '.') {
+					continue;
+		}
+	    strcpy (fullPath, entry->d_name);
+	    if (strcmp(extPtr, ".yang") == 0){
+	    	int len = strlen (entry->d_name);
+	    	// check if base part of file before '.' matches data store name
+	    	fullPath[len-5] = '\0';
+	    	if (strcmp (fullPath, name) != 0){
+	    		printf ("Yang model in %s is not applicable to this data store: %s\n", entry->d_name, name);
+	    		break;
+	    	}
+	    	log[0] = '\0';
+	        if (!applyYang (log, logLen)) {
+	            strcat (log, "Yang Model generated semantic error.\n");
+	            retValue = false;
+	        }
+	        break;
+	    }
+	}
+	closedir(dirp);
+	return retValue;
+}
+
+bool
+DataStore::applyYang (char *log, int logLen)
+{
+	// on Ubuntu, the command 'getconf ARG_MAX' gives the max size of a command which is very large ~ 2097152
+	// But we will use a smaller limit below
+	char command [PATHLEN*4 + 500];
+	FILE *fd;
+	char localPath [PATHLEN *2];
+	bool retValue;
+	int  numErrors, count;
+
+	// save DOM in a file to run Makefile on it
+	strcpy (localPath, yangDir);
+	strcat (localPath, "/");
+	strcat (localPath, name);
+	strcat (localPath, ".xml");
+	if ((fd = fopen (localPath, "w")) == NULL){
+		sprintf (log, "Unable to write DOC to an XML file.\n");
+		return false;
+	}
+    xmlDocDump (fd, doc);
+    fclose (fd);
+    // Apply Makefile
+    sprintf (command, "cp ./dsdlMakefile %s/Makefile;", yangDir);
+	//printf ("command to execute is : '%s'\n", command);
+	system (command);
+	sprintf (command, "cd %s; make BASE=%s > result1;", yangDir, name);
+	//printf ("command to execute is : '%s'\n", command);
+	system (command);
+	sprintf (command, "cd %s;  grep -E 'error|Failed|Error' result1 | wc -l > result;", yangDir);
+	//printf ("command to execute is : '%s'\n", command);
+	system (command);
+	// First read number of erros from the file result.
+	strcpy (localPath, yangDir);
+	strcat (localPath, "/");
+	strcat (localPath, "result");
+	if ((fd = fopen (localPath, "r")) == NULL){
+		sprintf (log, "Unable to generate results in the process of applying YANG.\n");
+		retValue = false;
+	} else {
+		count = fscanf (fd, "%d", &numErrors);
+		fclose (fd);
+		if (count != 1){
+			sprintf (log, "Unable to generate results in the process of applying YANG.\n");
+			retValue = false;
+		} else if (numErrors > 0){
+			retValue = false;
+			// open result to read errors and put them in 'log'
+			strcat (localPath, "1");
+			if ((fd = fopen (localPath, "r")) == NULL){
+				sprintf (log, "There are %d number of erros, but could not read the error text.\n", numErrors);
+			} else {
+				int i;
+				// file containing errors is open - read it
+				i = fread (log, 1, logLen-1, fd );
+				fclose (fd);
+				if (i == 0){
+					sprintf (log, "There are %d number of errors, but could not read the error text.\n", numErrors);
+				} else {
+					log[i] = '\0';
+				}
+			}
+
+		} else {
+			sprintf (log, "No errors.\n");
+			retValue = true;
+		}
+	}
+	sprintf (command, "cd %s; make clean BASE=%s;", yangDir, name);
+	system (command);
+	sprintf (command, "cd %s; rm -f Makefile;", yangDir);
+	system (command);
 	return retValue;
 }
 
@@ -516,7 +632,7 @@ DataStore::applyXSLT(struct ClientInfo *cinfo, char *xslt, char **printBuffPtr, 
 }
 
 int
-DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, char *log)
+DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, char *log, int logLen)
 {
 	int retValue;
 	xmlXPathObjectPtr objset;
@@ -554,12 +670,13 @@ DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, char *log)
 	    	doc = orgDoc;
 	    } else {
 	    	// doc modified - apply contraints
-	    	if (applyConstraints ()){
+	    	log[0] = '\0';
+	    	if (applyConstraints (log, logLen)){
 	    		xmlFreeDoc (orgDoc);
 	    	} else {
 	    		xmlFreeDoc (doc);
 	    		doc = orgDoc;
-	    		sprintf (log, "One or more contraint failed. No changes made.");
+	    		strcat (log, " One or more contraint failed. No changes made.");
 	    		retValue = -1;
 	    	}
 	    }
@@ -624,7 +741,7 @@ DataStore::udpateSelectedNodes (xmlNodeSetPtr nodes, xmlChar *newValue)
 }
 
 int
-DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, char *log)
+DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, char *log, int logLen)
 {
 	int retValue = -1;
 	xmlXPathObjectPtr objset;
@@ -665,13 +782,13 @@ DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newVa
 	    	sprintf (log, "Error in adding nodes");
 	    } else {
 	    	// doc successfully modified - apply contraints
-	    	if (applyConstraints()){
+	    	if (applyConstraints(log, logLen)){
 	    		xmlFreeDoc (orgDoc);
 	    	} else {
 	    		xmlFreeDoc (doc);
 	    		doc = orgDoc;
 	    		retValue = -1;
-	    		sprintf (log, "One or more constraints failed. No changes made.");
+	    		strcat (log, "One or more constraints failed. No changes made.\n");
 	    	}
 	    }
 	}
@@ -684,7 +801,7 @@ DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newVa
 }
 
 int
-DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, char *log)
+DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, char *log, int logLen)
 {
 	xmlNodePtr parent, newNode;
 	char *newNodesStrWrapped;
@@ -768,13 +885,13 @@ DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML,
 	}
 	xmlFreeDoc (newDoc);
 	// check constraints
-	if (applyConstraints ()){
+	if (applyConstraints (log, logLen)){
 		xmlFreeDoc (orgDoc);
 	} else {
 		xmlFreeDoc (doc);
 		doc = orgDoc;
 		count = -1;
-		sprintf (log, "One or more constraints failed. No changes done to Data Store.");
+		strcat (log, "One or more constraints failed. No changes done to Data Store.\n");
 	}
 	// for testing dump doc
 	// xmlDocDump (stdout, doc);

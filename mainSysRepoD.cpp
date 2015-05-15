@@ -91,25 +91,33 @@ void
 addDataStore (char *value)
 {
     int num;
-    char name   [PATHLEN*4+1];
-    char xmlFile[PATHLEN*4+1];
+    char name     [PATHLEN*4+1];
+    char xmlFile  [PATHLEN*4+1];
     char checkDir [PATHLEN*4+1];
+    char yangDir  [PATHLEN*4+1];
 
-    name[0]    = '\0';
-    xmlFile[0] = '\0';
-    checkDir[0]  = '\0';
+    name[0]     = '\0';
+    xmlFile[0]  = '\0';
+    checkDir[0] = '\0';
+    yangDir[0]  = '\0';
 
-    num = sscanf (value, "%s %s %s", name, xmlFile, checkDir);
+    num = sscanf (value, "%s %s %s %s", name, xmlFile, checkDir, yangDir);
     if (num < 2){
     	printf("Unable to add data store. Format: Name xmlFile XSDDir XSLTDir.\nLast two values optional.\n");
     	return;
     } else {
-    	// check if third value is a directory
+    	// check if third and fourth values are directories
     	if (strlen (checkDir) > 0 && !(common::IsDir (checkDir))){
     		printf ("Third parameter to define data store: %s is not a directory.\n", checkDir);
     		printf ("     Warning: Did not add data store.\n");
     		return;
     	}
+    	if (strlen (yangDir) > 0 && !(common::IsDir (yangDir))){
+    		printf ("Fourth parameter to define data store: %s is not a directory.\n", checkDir);
+    		printf ("     Warning: Did not add data store.\n");
+    		return;
+    	}
+
         if (strlen(name) < 1){
         	printf ("Name of data store is not present.\n");
         	printf ("Warning: Did not add data store.\n");
@@ -120,7 +128,7 @@ addDataStore (char *value)
         	printf ("Warning: Did not add data store.\n");
         	return;
         }
-    	if (!DataStores->addDataStoreFromFile(name, xmlFile, checkDir)){
+    	if (!DataStores->addDataStoreFromFile(name, xmlFile, checkDir, yangDir)){
     		printf ("Warning: Could not add data store %s\n", name);
     	}
     }
