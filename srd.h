@@ -29,7 +29,7 @@
 #define false 0
 
 #define SRD_DEFAULTSERVERPORT 3500
-
+#define SRD_DEFAULT_NAMESIZE 128
 /***********************************************
  * Function : srd_getNodeSet
  *
