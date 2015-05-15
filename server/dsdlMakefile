@@ -1,3 +1,6 @@
+# Creator : Ladislav Lhotka 
+# Modified by: Mark Baugher and Niraj Sharma
+
 MODULES = $(BASE).yang
 TARGET ?= config
 bn = $(BASE)
