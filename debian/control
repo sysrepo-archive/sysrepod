@@ -2,11 +2,11 @@ Source: sysrepod
 Section: devel
 Priority: optional
 Maintainer: Luka Perkov <luka.perkov@sartura.hr>
-Build-Depends: debhelper (>= 8.0.0), libxml2-dev
+Build-Depends: debhelper (>= 8.0.0), libxml2, libxml2-dev, libxslt1-dev
 Standards-Version: 3.9.4
 Homepage: http://www.freenetconf.org/
 
 Package: sysrepod
 Architecture: amd64 i386
-Depends: libxml2-dev
+Depends: libxml2, libxml2-dev, libxslt1-dev
 Description: sysrepo daemon
