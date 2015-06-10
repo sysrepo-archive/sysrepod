@@ -176,7 +176,7 @@ DataStore::applyConstraints (char *log, int logLen)
     }
 	closedir(dirp);
 	xsltCleanupGlobals();
-	xmlCleanupParser();
+
 	if (retValue == false) return retValue;
 
 	// so far all is good: let us test syntax and semantics using YANG model if sepcified
@@ -608,7 +608,6 @@ DataStore::applyXSLT(struct ClientInfo *cinfo, char *xslt, char **printBuffPtr, 
                 	xsltFreeStylesheet(cur); // Do not free sheetDoc, it is implicitly freed by this call
                 	xmlFreeDoc(res);
                 	xsltCleanupGlobals();
-                	xmlCleanupParser();
                 	unlockDS (cinfo);
                 	return 0;
                 }
@@ -623,7 +622,6 @@ DataStore::applyXSLT(struct ClientInfo *cinfo, char *xslt, char **printBuffPtr, 
 	xsltFreeStylesheet(cur); // Do not free sheetDoc, it is implicitly freed by this call
 	xmlFreeDoc(res);
 	xsltCleanupGlobals();
-	xmlCleanupParser();
 	if(unlockDS(cinfo)){
 		sprintf (*printBuffPtr, "Error in unlocking data store");
 		retValue = 0;

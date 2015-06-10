@@ -24,7 +24,7 @@
 #define MSGLENFIELDWIDTH 7
 int  srd_isServerResponseOK (int sockfd, char **OKcontent);
 
-bool
+int
 srd_sendServer (int sockfd, char *message, int msgSize)
 {
    char fmt[20];
@@ -40,7 +40,7 @@ srd_sendServer (int sockfd, char *message, int msgSize)
    // send size str
    while (sent < MSGLENFIELDWIDTH+1){
        n = send (sockfd, &(msgSizeStr[sent]), toSend, 0);
-       if (n < 1) return false;
+       if (n < 1) return 0;
        sent = sent + n;
        toSend = toSend - n;
    }
@@ -49,11 +49,11 @@ srd_sendServer (int sockfd, char *message, int msgSize)
    toSend = msgSize;
    while (sent < msgSize){
       n = send (sockfd, &(message[sent]), toSend, 0);
-      if (n < 1) return false;
+      if (n < 1) return 0;
       sent = sent + n;
       toSend = toSend - n;
    }
-   return true;
+   return 1;
 }
 
 int
@@ -403,7 +403,7 @@ srd_terminateServer (int sockfd)
 	if (!srd_isServerResponseOK (sockfd, NULL)){
 	   printf ("libsrd.a: Server response to terminate is not OK.\n");
 	}
-	xmlCleanupParser();
+	//xmlCleanupParser();
     close (sockfd);
 }
 
@@ -419,7 +419,7 @@ srd_disconnect (int sockfd)
 	if (!srd_isServerResponseOK (sockfd, NULL)){
 		   printf ("libsrd.a: Server response to disconnect is not OK.\n");
 	}
-	xmlCleanupParser();
+	//xmlCleanupParser();
 	close (sockfd);
 }
 
@@ -641,7 +641,7 @@ int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, cha
 	return 1;
 }
 
-bool
+int
 srd_listDataStores (int sockfd, char **result)
 {
 	char msg[100];
@@ -649,13 +649,13 @@ srd_listDataStores (int sockfd, char **result)
 	sprintf (msg, "<xml><command>list_dataStores</command></xml>");
 	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
-	    return false;
+	    return 0;
 	}
 	if (!srd_isServerResponseOK (sockfd, result)){
 		printf ("libsrd.a: Server response is not OK.\n");
-		return false;
+		return 0;
 	}
-	return true;
+	return 1;
 }
 
 int
@@ -826,7 +826,8 @@ srd_deleteOpDataStore (int sockfd, char *name)
 	return n;
 
 }
-bool
+
+int
 srd_listOpDataStores (int sockfd, char **result)
 {
 	char msg[100];
@@ -834,16 +835,17 @@ srd_listOpDataStores (int sockfd, char **result)
 	sprintf (msg, "<xml><command>list_opDataStores</command></xml>");
 	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
-	    return false;
+	    return 0;
 	}
 	if (!srd_isServerResponseOK (sockfd, result)){
 		printf ("libsrd.a: Server response is not OK.\n");
-		return false;
+		return 0;
 	}
-	return true;
+	return 1;
 
 }
-bool
+
+int
 srd_listMyUsageOpDataStores (int sockfd, char **result)
 {
 	char msg[100];
@@ -851,13 +853,13 @@ srd_listMyUsageOpDataStores (int sockfd, char **result)
 	sprintf (msg, "<xml><command>list_myUsageOpDataStores</command></xml>");
 	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
-	    return false;
+	    return 0;
 	}
 	if (!srd_isServerResponseOK (sockfd, result)){
 		printf ("libsrd.a: Server response is not OK.\n");
-		return false;
+		return 0;
 	}
-	return true;
+	return 1;
 }
 
 int
@@ -952,28 +954,28 @@ srd_applyXPathOpDataStore (int sockfd, char *opDataStoreName, char *xpath, char 
    free (msg);
 }
 
-bool
+int
 srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort)
 {
 	char  msg[150];
 
 	if (myIPAddress == NULL || strlen (myIPAddress) == 0 || strlen(myIPAddress) > 20 || myPort <= 0){
 		printf ("libsrd.a: IP Address and/or Port Number can not be absent or are wrong.");
-		return false;
+		return 0;
 	}
 	sprintf (msg, "<xml><command>register_clientSocket</command><param1>%s</param1><param2>%d</param2></xml>", myIPAddress, myPort);
 	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
-	    return false;
+	    return 0;
 	}
 	if (!srd_isServerResponseOK (sockfd, NULL)){
 		printf ("libsrd.a: Server response is not OK.\n");
-		return false;
+		return 0;
 	}
-	return true;
+	return 1;
 }
 
-bool
+int
 srd_registerClientSignal (int sockfd, pid_t clientPID, int signalType)
 {
 	char  msg[150];
@@ -982,13 +984,13 @@ srd_registerClientSignal (int sockfd, pid_t clientPID, int signalType)
 			clientPID, signalType);
 	if (!srd_sendServer (sockfd, msg, strlen(msg))){
 	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
-	    return false;
+	    return 0;
 	}
 	if (!srd_isServerResponseOK (sockfd, NULL)){
 		printf ("libsrd.a: Server response is not OK.\n");
-		return false;
+		return 0;
 	}
-	return true;
+	return 1;
 }
 
 int

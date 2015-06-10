@@ -116,7 +116,12 @@
        cd client_SRD
        ./xsltTest
 
- 15) SEMANTIC CONSTRAINTS USING XSLT: An example of a semantic constraint is that the number of
+ 15) SEMANTIC CONSTRAINTS USING XSLT: One can express semantic constraints in YANG Model also, but
+     there may be many constraints that can not be expressed in Yang Model due to its limitations. XSLT is
+     a quite complete programming language and can be used to express all semanitc contraints. Due to this
+     reason, SysrepoD provides support for XSLT in addition to Yang Model.
+
+     An example of a semantic constraint is that the number of
      <interface> nodes must be greater than 1. Arbitrarily complex semantic constraints can
      be expressed using XSLT as it is a full-fledged programming language. We assume that XSLT
      generates <ok/> xml if the constraints are met. If constraints are not met, the generated xml
@@ -127,13 +132,11 @@
 
      defines a data store 'runtime', its XML, and the third parameter is a directory path 'checkDir'.
      Since, the current dir for server is './server', 'checkDir' exists under './server'.
-     This dir may contains XSD, DSDL & XSLT files specifying Data Store's syntactic and semantic 
-     contraints (all files in one directory). In the dir, the file extensions will tell the server 
-     what to do with them. Note that this third parameter, a dir path, is optional.
+     This dir contains XSLT files specifying Data Store's semantic 
+     contraints (many files possible in one directory).  Note that this third parameter, a dir path, is optional.
 
-     Currently, only the processing of XSLT is implemented. 'checkDir' contains one sample XSL file
-     checking that the data store must have at least one 1 <interface> node. For a -ve test, you can
-     edit this XSL file and replace 8th line with the following line:
+     'checkDir' contains one sample XSL file checking that the data store must have at least one 1 <interface> node. 
+     For a -ve test, you can edit this XSL file and replace 8th line with the following line:
 
          <xsl:when test="$num &gt; 3">
 

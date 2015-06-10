@@ -89,10 +89,10 @@ xmlChar *srd_getFirstNodeValue (xmlDocPtr doc, xmlChar *xpath);
  * 		message  - The message to be sent to the server
  * 		msgSize  - The length of the message
  *
- * Return Value: Returns false on error and true on success
+ * Return Value: Returns 0 on error and 1 on success
  *
  ************************************************/
-bool srd_sendServer (int sockfd, char *message, int msgSize);
+int srd_sendServer (int sockfd, char *message, int msgSize);
 
 /***********************************************
  * Function : srd_recvServer
@@ -283,10 +283,10 @@ int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, cha
  * 		sockfd  - The socket connected to the server
  * 		result  - The list of all Data Stores. Need to free it after use.
  *
- * Return Value: On success returns true and false on failure.
+ * Return Value: On success returns 1 and 0 on failure.
  *
  ************************************************/
-bool srd_listDataStores (int sockfd, char **result);
+int srd_listDataStores (int sockfd, char **result);
 
 /***********************************************
  * Function : srd_deleteDataStore
@@ -358,10 +358,10 @@ int  srd_deleteOpDataStore (int sockfd, char *name);
  * 		sockfd  - The socket connected to the server
  * 		result  - The list of all Operational Data Stores. Need to free it after use.
  *
- * Return Value: On success returns true and false on failure.
+ * Return Value: On success returns 1 and 0 on failure.
  *
  ************************************************/
-bool srd_listOpDataStores (int sockfd, char **result);
+int srd_listOpDataStores (int sockfd, char **result);
 
 /***********************************************
  * Function : srd_listMyUsageOpDataStores
@@ -372,10 +372,10 @@ bool srd_listOpDataStores (int sockfd, char **result);
  * 		sockfd  - The socket connected to the server
  * 		result  - The list of all Operational Data Stores being used by this client. Need to free it after use.
  *
- * Return Value: On success returns true and false on failure.
+ * Return Value: On success returns 1 and 0 on failure.
  *
  ************************************************/
-bool srd_listMyUsageOpDataStores (int sockfd, char **result);
+int srd_listMyUsageOpDataStores (int sockfd, char **result);
 
 /***********************************************
  * Function : srd_useOpDataStore
@@ -441,10 +441,10 @@ void srd_applyXPathOpDataStore (int sockfd, char *opDataStoreName, char *xpath, 
  * 		myIPAddress - Client's IP Address
  * 		myPort      - The listening port of the client
  *
- * Return Value: On success returns true and false on failure.
+ * Return Value: On success returns 1 and 0 on failure.
  *
  ************************************************/
-bool srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort);
+int srd_registerClientSocket (int sockfd, char *myIPAddress, int myPort);
 
 /***********************************************
  * Function : srd_DOMHandleXPath
@@ -473,10 +473,10 @@ void srd_DOMHandleXPath (int sockfd, xmlDocPtr ds, xmlChar *xpathExpr);
  * 		clientPID   - PID of the process that should receive a signal if DOM tree changes
  * 		signalType  - The type of the signal that is to be sent to the process identified by PID.
  *
- * Return Value: true on success and false otherwise.
+ * Return Value: 1 on success and 0 otherwise.
  *
  ************************************************/
-bool srd_registerClientSignal (int sockfd, pid_t clientPID, int signalType);
+int srd_registerClientSignal (int sockfd, pid_t clientPID, int signalType);
 
 /***********************************************
  * Function : srd_applyXSLT
