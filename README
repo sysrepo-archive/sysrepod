@@ -25,8 +25,40 @@
      cd client_SRD
      ./opDStoreClient
      # It will start this North-Side Management Client. You will see messages going to server and to 'clientsrd'
-     # started earlier.         
-
+     # started earlier.  
+            
+3.01) SysrepoD PARAMETERS and LOGGING SYSTEM
+   One can specify start-up parameters in a file and use the file at the time of starting 'sysrepod'.
+   In the command './sysrepod param', the file 'param' contains the start-up parameters for the 'sysrepod'. A description
+   of parameters is as follows. Each parameter must be specified on a separate line and must be terminated by ';'.
+   
+   a) LOGDIR <dir_name> : It is used to specify where log files will be stored. Default value = "logs".
+   b) LOGSIZE <integer> : It is used to specify the maximum size (Bytes) of each log file. When a log file reaches this limit,
+                           a new log file is created. Default value = 1 MB
+   c) NUMLOGS <integer> : It specifies the maximum number of log files to keep. When maximum number of log files get
+                          created, the oldest file is deleted to create a new log file. Default value = 100.
+   d) LOGLEVEL <integer> : Higher the value for LOGLEVEL, more log messages will get generated. Default value = 10.
+                           The server logs the RECEIVED and SENT commands at level 4.
+   e) SERVERPORT <integer> : It specifies the main listening port for the server. Default value = 3500.
+   f) MAXCLIENTS <integer> : It specifies the maximum number of concurrect clients that connect to the server. Default value = 20
+                             There is no limit for this value.
+   g) MAXDATASTORES <integer> : It specifies the maximum number of data stores that can be created on the server. Default value = 50.
+                                There is no limit for this value.
+   h) MAXOPDATASTORES <integer> : It specifies the maximum number of operational data stores. Default value = 50.
+                                  There is no limit for this value.
+   i) DATASTORE <data_store_name> <xmlFilePath> <xsltDirPath> <yangDirPath> : It is used to specify a Data Store at start-up time.
+           Data stores can also be defined using API. The parameter descriptions are as follows:
+           <data_store_name> - Name of the data store to be created
+           <xmlFilePath> - The path to an XML file that will be used to form the data store.
+           <xsltDirPath> - The path to a dir that may contain 0 or more XSLT files that are used for semantic checks when data store
+                           is modified. The XSLT scripts must generate <ok/> node for the semantic test to pass. This value is optional
+                           if the next parameter <yangDirPath> is not present. More description is given under 15).
+           <yangDirPath> - It specifies a dir containing a Yang file that is used to perform syntactic and semantic checks on the data store
+                           at the time of all modifications. The yang file name must match the data store name. For example, if the data store
+                           name is 'runtime', the correspoding Yang file name must be 'runtime.yang'. The value of <yangDirPath> could be any path.
+                           Note that this parameter is optional, but if this parameter is present, <xsltDirPath> must also be present.
+                           more description is given under 16).
+                           
 4) One can run many clients in parallel from separate XTERM windows.
 5) ClientSRD.cpp implements a client class that talks SRD protocol. One can create additional classes
    for different protocols by deriving from the base class Client implemented in Client.cpp.

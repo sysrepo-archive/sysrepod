@@ -253,10 +253,13 @@ bool common::SendMessage (int sock, char *message)
 	int sent = 0;
 	int toSend;
 	int n;
+	char sendInfo [100];
 
 	sprintf (fmt, "%%.%dd ", MSGLENFIELDWIDTH);
 	sprintf (msgSizeStr, fmt, msgSize);
-	printf ("Message SENT on Socket %d is : %s%s\n", sock, msgSizeStr, message);
+	sprintf (sendInfo, "Message SENT on Socket %d is : %s\n", sock, msgSizeStr);
+	common::LogMsg (4, sendInfo, false);
+	common::LogMsg (4, message, false);
 	toSend = MSGLENFIELDWIDTH + 1;
 	// send size str
 	while (sent < toSend){
