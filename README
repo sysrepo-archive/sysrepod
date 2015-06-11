@@ -43,7 +43,7 @@
    d) LOGLEVEL <integer> : Higher the value for LOGLEVEL, more log messages will get generated. Default value = 10.
                            The server logs the RECEIVED and SENT commands at level 4.
    e) SERVERPORT <integer> : It specifies the main listening port for the server. Default value = 3500.
-   f) MAXCLIENTS <integer> : It specifies the maximum number of concurrect clients that connect to the server. Default value = 20
+   f) MAXCLIENTS <integer> : It specifies the maximum number of concurrent clients that can connect to the server. Default value = 20
                              There is no limit for this value.
    g) MAXDATASTORES <integer> : It specifies the maximum number of data stores that can be created on the server. Default value = 50.
                                 There is no limit for this value.
