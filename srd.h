@@ -19,6 +19,8 @@
  * This file describes the API that can be used by north-side applications and south-side daemons to communicate with
  * SysrepoD or as a set of utility functions.
  *
+ * NOTE: Client Programs of this API must call "xmlCleanupParser()" only once just before exiting. <<<<<<<<<<<<<<<<<<<<<<
+ *       SRD Library does not make this call.
  */
 #ifndef SRD_H_
 #define SRD_H_

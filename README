@@ -26,6 +26,9 @@
      ./opDStoreClient
      # It will start this North-Side Management Client. You will see messages going to server and to 'clientsrd'
      # started earlier.  
+     
+   NOTE: Client Programs that use SRD API must call "xmlCleanupParser()" only once just before exiting. SRD library
+         does not make this call. <<<<<<<<<<<<<<<<<<<<<<
             
 3.01) SysrepoD PARAMETERS and LOGGING SYSTEM
    One can specify start-up parameters in a file and use the file at the time of starting 'sysrepod'.

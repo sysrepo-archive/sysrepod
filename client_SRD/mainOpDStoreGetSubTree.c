@@ -71,6 +71,7 @@ int main(int argc, char**argv)
 
    srd_disconnect (sockfd); // disconnect this client, leave server running
    // srd_terminateServer (sockfd); // terminate server and disconnect this client
+   xmlCleanupParser();
    exit (0);
 }
 
