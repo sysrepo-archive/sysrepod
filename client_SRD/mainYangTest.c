@@ -53,15 +53,15 @@ int main(int argc, char**argv)
    //strcpy (xpath, "/config/sshd_config_options/*");
    strcpy (xpath, "/*");
    strcpy (newValue, "<HostKeyAgent/>");
-   if ((n=srd_addNodes (sockfd, xpath, newValue)) < 0){
+   if ((n=srd_addNodes (sockfd, xpath, newValue, MODIFY_WITH_VALIDATION)) < 0){
 	   printf ("Error in adding a new node to the nodes selected by XPath %s\n", xpath);
    } else {
 	   printf ("Added new node:\n%s\nto %d number of nodes selected using XPath %s\n", newValue, n, xpath );
    }
 
-   printf ("Going to sleep for 5 seconds before exiting.......\n");
+   printf ("Going to sleep for 3 seconds before exiting.......\n");
    fflush (stdout);
-   sleep (20);
+   sleep (3);
    printf ("About to disconnect from SYSREPOD server\n");
    fflush (stdout);
    srd_disconnect (sockfd); // disconnect this client, leave server running

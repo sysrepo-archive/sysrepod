@@ -36,7 +36,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 	xmlDocPtr doc;
 	xmlChar xpath[100];
 	xmlChar *command;
-	xmlChar *param1, *param2;
+	xmlChar *param1, *param2, *param3;
 	int retValue = 0;
 	int n;
 
@@ -240,7 +240,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
         }
 	} else if (strcmp ((char *)command, "add_nodesDataStore") == 0){
         // param1 expected to contain XPath to select a set of nodes and param2 will have a set of XML nodes that are
-		// to be put under the nodes selected by XPath.
+		// to be put under the nodes selected by XPath. param3 contains MODIFY_OPTION (an integer).
 		strcpy ((char *) xpath, "/xml/param1");
 		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
 		if(param1 == NULL){
@@ -258,36 +258,114 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			} else {
 			    if (!applyXPath(doc, xpath, &param2Value, param2BuffSize)){
 				   sprintf (outBuffer, "<xml><error>Unable to find param2 value</error></xml>");
-			    } else if (cinfo->dataStore == NULL){
-			   	   sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
 			    } else {
-			   	   if ((n = (cinfo->dataStore->addNodes ((struct ClientInfo *)cinfo, param1, param2Value, log, MAXDATASTORENAMELEN))) < 0){
-			   			sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
-			   	   } else {
-			   			sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
-			   			cinfo->clientSet->signalClients (cinfo->dataStore);
-				   }
-				}
+			       strcpy ((char *) xpath, "/xml/param3");
+			       param3 = ClientSet::GetFirstNodeValue(doc, xpath);
+			       if(param3 == NULL){
+			    		sprintf (outBuffer, "<xml><error>MODIFY OPTION not found</error></xml>");
+			    		common::SendMessage(cinfo->sock, outBuffer);
+			       } else {
+			    		ModifyOption mo;
+			    		n = sscanf ((char *)param3, "%d", (int *) &mo);
+			    		if (n != 1) {
+			    			sprintf (outBuffer, "<xml><error>MOIDFY OPTION is not a proper integer</error></xml>");
+			            } else if (cinfo->dataStore == NULL){
+			   	            sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+			            } else {
+			   	            if ((n = (cinfo->dataStore->addNodes ((struct ClientInfo *)cinfo, param1, param2Value, mo, log, MAXDATASTORENAMELEN))) < 0){
+			   			        sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
+			   	            } else {
+			   			        sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+			   			        cinfo->clientSet->signalClients (cinfo->dataStore);
+				            }
+				       }
+			    	   xmlFree (param3);
+			       }
+			    }
 			    free (param2Value);
 			}
 			xmlFree (param1);
 		}
 		common::SendMessage(cinfo->sock, outBuffer);
-	} else if (strcmp ((char *)command, "delete_nodesDataStore") == 0){
-	        // param1 expected to contain XPath to select a set of nodes to be deleted
+	} else if (strcmp ((char *)command, "replace_nodesDataStore") == 0){
+	        // param1 expected to contain XPath to select a set of nodes and param2 represents a subtree that is
+			// to replace the nodes selected by XPath. param3 contains MODIFY_OPTION (an integer).
 			strcpy ((char *) xpath, "/xml/param1");
 			param1 = ClientSet::GetFirstNodeValue(doc, xpath);
 			if(param1 == NULL){
 				sprintf (outBuffer, "<xml><error>XPath not found</error></xml>");
 			} else {
-				char  log[MAXDATASTORENAMELEN+ 100];
-				if (cinfo->dataStore == NULL){
-					sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
-				} else if ((n = (cinfo->dataStore->deleteNodes ((struct ClientInfo *)cinfo, param1, log,MAXDATASTORENAMELEN))) < 0){
-				   	 sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
+				char  log[MAXDATASTORENAMELEN + 100];
+				int   param2BuffSize = 100;
+				char *param2Value = NULL;
+
+				strcpy ((char *) xpath, "/xml/param2/*");
+				// value of param2 is a node set, not a string like in other cases
+				param2Value = (char *) malloc (param2BuffSize + 1);
+				if (param2Value == NULL){
+					sprintf (outBuffer, "<xml><error>Unable to allocate space to extract value of param2</error></xml>");
 				} else {
-				   	 sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
-				   	 cinfo->clientSet->signalClients (cinfo->dataStore);
+				    if (!applyXPath(doc, xpath, &param2Value, param2BuffSize)){
+					   sprintf (outBuffer, "<xml><error>Unable to find param2 value</error></xml>");
+				    } else {
+				       strcpy ((char *) xpath, "/xml/param3");
+				       param3 = ClientSet::GetFirstNodeValue(doc, xpath);
+				       if(param3 == NULL){
+				    		sprintf (outBuffer, "<xml><error>MODIFY OPTION not found</error></xml>");
+				    		common::SendMessage(cinfo->sock, outBuffer);
+				       } else {
+				    		ModifyOption mo;
+				    		n = sscanf ((char *)param3, "%d", (int *) &mo);
+				    		if (n != 1) {
+				    			sprintf (outBuffer, "<xml><error>MOIDFY OPTION is not a proper integer</error></xml>");
+				            } else if (cinfo->dataStore == NULL){
+				   	            sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+				            } else {
+				   	            if ((n = (cinfo->dataStore->replaceNodes ((struct ClientInfo *)cinfo, param1, param2Value, mo, log, MAXDATASTORENAMELEN))) < 0){
+				   			        sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
+				   	            } else {
+				   			        sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+				   			        cinfo->clientSet->signalClients (cinfo->dataStore);
+					            }
+					       }
+				    	   xmlFree (param3);
+				       }
+				    }
+				    free (param2Value);
+				}
+				xmlFree (param1);
+			}
+			common::SendMessage(cinfo->sock, outBuffer);
+
+	} else if (strcmp ((char *)command, "delete_nodesDataStore") == 0){
+	        // param1 expected to contain XPath to select a set of nodes to be deleted, param2 contains MOIDY OPTIONS (int)
+			strcpy ((char *) xpath, "/xml/param1");
+			param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+			if(param1 == NULL){
+				sprintf (outBuffer, "<xml><error>XPath not found</error></xml>");
+			} else {
+				strcpy ((char *) xpath, "/xml/param2");
+				param2 = ClientSet::GetFirstNodeValue(doc, xpath);
+				if(param2 == NULL){
+					sprintf (outBuffer, "<xml><error>MODIFY OPTION not found</error></xml>");
+					common::SendMessage(cinfo->sock, outBuffer);
+				} else {
+					ModifyOption mo;
+					n = sscanf ((char *)param2, "%d", (int *) &mo);
+					if (n != 1) {
+						sprintf (outBuffer, "<xml><error>MOIDFY OPTION is not a proper integer</error></xml>");
+			        } else {
+				        char  log[MAXDATASTORENAMELEN+ 100];
+				        if (cinfo->dataStore == NULL){
+					        sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+				        } else if ((n = (cinfo->dataStore->deleteNodes ((struct ClientInfo *)cinfo, param1, mo, log,MAXDATASTORENAMELEN))) < 0){
+				   	        sprintf (outBuffer, "<xml><error>%s</error></xml>", log);
+				        } else {
+				   	        sprintf (outBuffer, "<xml><ok>%d</ok></xml>", n);
+				   	        cinfo->clientSet->signalClients (cinfo->dataStore);
+				        }
+			        }
+					xmlFree (param2);
 				}
 				xmlFree (param1);
 			}
@@ -311,7 +389,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		}
 		common::SendMessage(cinfo->sock, outBuffer);
 	} else if (strcmp ((char *)command, "update_nodes") == 0){
-		// param1 contains xpath, param2 contains new value
+		// param1 contains xpath, param2 contains new value, param3 contains MODIFY_OPTION (int)
 		strcpy ((char *) xpath, "/xml/param1");
 		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
 		if(param1 == NULL){
@@ -324,22 +402,35 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			if(param2 == NULL){
 			    sprintf (outBuffer, "<xml><error>New value not found</error></xml>");
 			    common::SendMessage(cinfo->sock, outBuffer);
-			} else if (cinfo->dataStore == NULL){
-				sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
-				common::SendMessage(cinfo->sock, outBuffer);
-				xmlFree (param2);
 			} else {
-				int numNodesModified;
-                numNodesModified = cinfo->dataStore->updateNodes ((struct ClientInfo *)cinfo, param1, param2, log, MAXDATASTORENAMELEN);
-                if (numNodesModified < 0){
-                	sprintf (outBuffer, "<xml><error>Error in modifying nodes: %s</error></xml>", log);
-                } else {
-                	sprintf (outBuffer, "<xml><ok>%d</ok></xml>",numNodesModified);
-                	if (numNodesModified > 0) cinfo->clientSet->signalClients (cinfo->dataStore);
-                }
-                common::SendMessage(cinfo->sock, outBuffer);
+				strcpy ((char *) xpath, "/xml/param3");
+				param3 = ClientSet::GetFirstNodeValue(doc, xpath);
+				if(param3 == NULL){
+					sprintf (outBuffer, "<xml><error>MODIFY OPTION not found</error></xml>");
+					common::SendMessage(cinfo->sock, outBuffer);
+				} else {
+					ModifyOption mo;
+					n = sscanf ((char *)param3, "%d", (int *) &mo);
+					if (n != 1) {
+						sprintf (outBuffer, "<xml><error>MOIDFY OPTION is not a proper integer</error></xml>");
+					} else if (cinfo->dataStore == NULL){
+				        sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+				        common::SendMessage(cinfo->sock, outBuffer);
+			        } else {
+				        int numNodesModified;
+                        numNodesModified = cinfo->dataStore->updateNodes ((struct ClientInfo *)cinfo, param1, param2, mo, log, MAXDATASTORENAMELEN);
+                        if (numNodesModified < 0){
+                	        sprintf (outBuffer, "<xml><error>Error in modifying nodes: %s</error></xml>", log);
+                        } else {
+                	        sprintf (outBuffer, "<xml><ok>%d</ok></xml>",numNodesModified);
+                	        if (numNodesModified > 0) cinfo->clientSet->signalClients (cinfo->dataStore);
+                        }
+                        common::SendMessage(cinfo->sock, outBuffer);
+			        }
+					xmlFree (param3);
+				}
 				xmlFree (param2);
-			}
+		    }
 		    xmlFree (param1);
 		}
 	} else if (strcmp((char *)command, "register_clientSocket") == 0){

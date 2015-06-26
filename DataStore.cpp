@@ -630,13 +630,17 @@ DataStore::applyXSLT(struct ClientInfo *cinfo, char *xslt, char **printBuffPtr, 
 }
 
 int
-DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, char *log, int logLen)
+DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, ModifyOption mo, char *log, int logLen)
 {
 	int retValue;
 	xmlXPathObjectPtr objset;
 	xmlDocPtr orgDoc;
 
 	log[0] = '\0';
+	if (mo != MODIFY_WITH_VALIDATION && mo != MODIFY_NO_VALIDATION && mo != VALIDATE_NO_MODIFICATION){
+		sprintf (log, "MODIFY OPTION parameter is not correct.");
+		return -1;
+	}
 	if (lockDS(cinfo)){
 		sprintf (log, "Error in locking data store");
 		return -1;
@@ -667,15 +671,25 @@ DataStore::deleteNodes(struct ClientInfo *cinfo, xmlChar *xpath, char *log, int 
 	    	xmlFreeDoc (doc);
 	    	doc = orgDoc;
 	    } else {
-	    	// doc modified - apply contraints
 	    	log[0] = '\0';
-	    	if (applyConstraints (log, logLen)){
+	    	// doc modified - apply contraints if applicable
+	    	if (mo == MODIFY_WITH_VALIDATION){
+	    	    if (applyConstraints (log, logLen)){
+	    		    xmlFreeDoc (orgDoc);
+	    		} else {
+	    		    xmlFreeDoc (doc);
+	    		    doc = orgDoc;
+	    		    retValue = -1;
+	    		    strcat (log, "One or more constraints failed. No changes done to Data Store.\n");
+	    		}
+	    	} else if (mo == MODIFY_NO_VALIDATION){
 	    		xmlFreeDoc (orgDoc);
-	    	} else {
+	    	} else if (mo == VALIDATE_NO_MODIFICATION){
+	    		if (!applyConstraints (log, logLen)){
+	    		    retValue = -2;
+	    		}
 	    		xmlFreeDoc (doc);
 	    		doc = orgDoc;
-	    		strcat (log, " One or more contraint failed. No changes made.");
-	    		retValue = -1;
 	    	}
 	    }
 	}
@@ -739,13 +753,17 @@ DataStore::udpateSelectedNodes (xmlNodeSetPtr nodes, xmlChar *newValue)
 }
 
 int
-DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, char *log, int logLen)
+DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, ModifyOption mo, char *log, int logLen)
 {
 	int retValue = -1;
 	xmlXPathObjectPtr objset;
 	xmlDocPtr orgDoc;
 
 	log[0] = '\0';
+	if (mo != MODIFY_WITH_VALIDATION && mo != MODIFY_NO_VALIDATION && mo != VALIDATE_NO_MODIFICATION){
+		sprintf (log, "MODIFY OPTION parameter is not correct.");
+		return -1;
+	}
 	if (lockDS(cinfo)){
 		sprintf (log, "Error in locking data store");
 		return -1;
@@ -779,14 +797,24 @@ DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newVa
 	    	doc = orgDoc;
 	    	sprintf (log, "Error in adding nodes");
 	    } else {
-	    	// doc successfully modified - apply contraints
-	    	if (applyConstraints(log, logLen)){
-	    		xmlFreeDoc (orgDoc);
-	    	} else {
+	    	// doc successfully modified - apply contraints if applicable
+	    	if (mo == MODIFY_WITH_VALIDATION){
+	    		if (applyConstraints (log, logLen)){
+	    			xmlFreeDoc (orgDoc);
+	    		} else {
+	    			xmlFreeDoc (doc);
+	    			doc = orgDoc;
+	    			retValue = -1;
+	    			strcat (log, "One or more constraints failed. No changes done to Data Store.\n");
+	    		}
+	        } else if (mo == MODIFY_NO_VALIDATION){
+	    	    xmlFreeDoc (orgDoc);
+	    	} else if (mo == VALIDATE_NO_MODIFICATION){
+	    		if (!applyConstraints (log, logLen)){
+	    			retValue = -2;
+	    		}
 	    		xmlFreeDoc (doc);
 	    		doc = orgDoc;
-	    		retValue = -1;
-	    		strcat (log, "One or more constraints failed. No changes made.\n");
 	    	}
 	    }
 	}
@@ -799,7 +827,124 @@ DataStore::updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newVa
 }
 
 int
-DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, char *log, int logLen)
+DataStore::replaceNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, ModifyOption mo, char *log, int logLen)
+{
+	xmlNodePtr parent, newNode;
+	char *newNodesStrWrapped;
+	xmlDocPtr newDoc;
+	xmlXPathObjectPtr objset;
+	xmlNodeSet *nodeSet;
+	int i;
+	xmlNode *cur_node;
+	int count = 0;
+	xmlDocPtr orgDoc;
+
+	log[0] = '\0';
+	if (xpath == NULL || nodeSetXML == NULL || strlen ((char *)xpath) < 1 || strlen(nodeSetXML) < 1){
+		sprintf (log, "All required parameters are not provided for DataStore::replaceNodes()");
+		return -1;
+	}
+	if (mo != MODIFY_WITH_VALIDATION && mo != MODIFY_NO_VALIDATION && mo != VALIDATE_NO_MODIFICATION){
+		sprintf (log, "MODIFY OPTION parameter is not correct.");
+		return -1;
+	}
+	newNodesStrWrapped = (char *) malloc (strlen (nodeSetXML) + 20);
+	if (!newNodesStrWrapped){
+		sprintf (log, "Unable to allocate space");
+		return -1;
+	}
+	sprintf (newNodesStrWrapped, "<a>%s</a>", nodeSetXML);
+	newDoc = xmlReadMemory (newNodesStrWrapped, strlen (newNodesStrWrapped), NULL, NULL, 0);
+	free (newNodesStrWrapped);
+	if (!newDoc){
+		sprintf (log, "Failed to make DOM");
+		return -1;
+	}
+	if (xmlChildElementCount (xmlDocGetRootElement(newDoc)) > 1){
+		sprintf (log, "Only one subtree can be put in. Found many.");
+		xmlFreeDoc (newDoc);
+		return -1;
+	}
+	if (lockDS(cinfo)){
+		sprintf (log, "Error in locking data store");
+		xmlFreeDoc (newDoc);
+		return -1;
+	}
+
+	orgDoc = doc;
+	// create a duplicate of orgDoc
+    doc = xmlCopyDoc (orgDoc, 1);
+	if (doc == NULL){
+		doc = orgDoc;
+		sprintf (log, "Error in creating a duplicate DOM tree.");
+		xmlFreeDoc (newDoc);
+		unlockDS (cinfo);
+		return -1;
+	}
+
+	// apply xpath and get nodeset
+	objset =  getNodeSet (xpath, log);
+	if (!objset){
+		xmlFreeDoc (doc);
+		doc = orgDoc;
+		xmlFreeDoc (newDoc);
+		unlockDS(cinfo);
+		return 0;
+	}
+	nodeSet = objset->nodesetval;
+	if (nodeSet == NULL || xmlXPathNodeSetIsEmpty(nodeSet)){
+		xmlFreeDoc (doc);
+		doc = orgDoc;
+		xmlFreeDoc (newDoc);
+		unlockDS(cinfo);
+		return 0;
+	}
+	for (i=0; i < nodeSet->nodeNr; i++) {
+	    cur_node = nodeSet->nodeTab[i];
+	    if (cur_node->type == XML_ELEMENT_NODE) {
+	    	// add new nodes to it
+	    	newNode = xmlDocCopyNode(xmlDocGetRootElement(newDoc)->xmlChildrenNode, doc, 1);
+	    	if (!newNode){
+	    		continue;
+	    	} else {
+	    		xmlNodePtr addedNode = xmlReplaceNode (cur_node, newNode);
+	    		if (addedNode){
+	    		   count++;
+	    		} else {
+	    			xmlFreeNode (newNode);
+	    		}
+	    	}
+
+	    }
+	}
+	xmlFreeDoc (newDoc);
+	// check constraints if applicable
+	if (mo == MODIFY_WITH_VALIDATION){
+	    if (applyConstraints (log, logLen)){
+		    xmlFreeDoc (orgDoc);
+	    } else {
+		    xmlFreeDoc (doc);
+		    doc = orgDoc;
+		    count = -1;
+		    strcat (log, "One or more constraints failed. No changes done to Data Store.\n");
+	    }
+	} else if (mo == MODIFY_NO_VALIDATION){
+		xmlFreeDoc (orgDoc);
+	} else if (mo == VALIDATE_NO_MODIFICATION){
+		if (!applyConstraints (log, logLen)){
+			count = -2;
+		}
+		xmlFreeDoc (doc);
+		doc = orgDoc;
+	}
+	// for testing dump doc
+	// xmlDocDump (stdout, doc);
+	unlockDS(cinfo);
+	return count;
+}
+
+int
+DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, ModifyOption mo, char *log, int logLen)
 {
 	xmlNodePtr parent, newNode;
 	char *newNodesStrWrapped;
@@ -814,6 +959,10 @@ DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML,
 	log[0] = '\0';
 	if (xpath == NULL || nodeSetXML == NULL || strlen ((char *)xpath) < 1 || strlen(nodeSetXML) < 1){
 		sprintf (log, "All required parameters are not provided for DataStore::addNodes()");
+		return -1;
+	}
+	if (mo != MODIFY_WITH_VALIDATION && mo != MODIFY_NO_VALIDATION && mo != VALIDATE_NO_MODIFICATION){
+		sprintf (log, "MODIFY OPTION parameter is not correct.");
 		return -1;
 	}
 	newNodesStrWrapped = (char *) malloc (strlen (nodeSetXML) + 20);
@@ -869,8 +1018,7 @@ DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML,
 	    	newNode = xmlDocCopyNode(xmlDocGetRootElement(newDoc), doc, 1);
 	    	if (!newNode){
 	    		continue;
-	    	}
-	    	else {
+	    	} else {
 	    		xmlNodePtr addedNode = xmlAddChildList (cur_node, newNode->children);
 	    		if (addedNode){
 	    		   count++;
@@ -882,14 +1030,24 @@ DataStore::addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML,
 	    }
 	}
 	xmlFreeDoc (newDoc);
-	// check constraints
-	if (applyConstraints (log, logLen)){
+	// check constraints if applicable
+	if (mo == MODIFY_WITH_VALIDATION){
+	    if (applyConstraints (log, logLen)){
+		    xmlFreeDoc (orgDoc);
+	    } else {
+		    xmlFreeDoc (doc);
+		    doc = orgDoc;
+		    count = -1;
+		    strcat (log, "One or more constraints failed. No changes done to Data Store.\n");
+	    }
+	} else if (mo == MODIFY_NO_VALIDATION){
 		xmlFreeDoc (orgDoc);
-	} else {
+	} else if (mo == VALIDATE_NO_MODIFICATION){
+		if (!applyConstraints (log, logLen)){
+			count = -2;
+		}
 		xmlFreeDoc (doc);
 		doc = orgDoc;
-		count = -1;
-		strcat (log, "One or more constraints failed. No changes done to Data Store.\n");
 	}
 	// for testing dump doc
 	// xmlDocDump (stdout, doc);

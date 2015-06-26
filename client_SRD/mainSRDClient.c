@@ -174,7 +174,7 @@ int main(int argc, char**argv)
    // change the name of the first interface to 'new_eth0'
    strcpy (xpath, "/hosts/host/interfaces/interface[1]/name");
    strcpy (newValue, "new_eth0");
-   n = srd_updateNodes (sockfd, xpath, newValue);
+   n = srd_updateNodes (sockfd, xpath, newValue, MODIFY_WITH_VALIDATION);
    if (n < 0){
 	   printf ("Error in updating the value of %s.\n", xpath);
    } else {
@@ -193,7 +193,7 @@ int main(int argc, char**argv)
    // Add a new sub-tree to all <interface> nodes
    strcpy (xpath, "/hosts/host/interfaces/*");
    strcpy (newValue, "<street>1 Infinity Loop</street><city>Cupertino</city><state>CA</state>");
-   if ((n=srd_addNodes (sockfd, xpath, newValue)) < 0){
+   if ((n=srd_addNodes (sockfd, xpath, newValue, MODIFY_WITH_VALIDATION)) < 0){
 	   printf ("Error in adding a subtree to the nodes selected by XPath %s\n", xpath);
    } else {
 	   printf ("Added new subtree formed using the XML:\n%s\nto %d number of nodes selected using XPath %s\n", newValue, n, xpath );
@@ -236,7 +236,7 @@ int main(int argc, char**argv)
 
    // Delete all nodes under <hosts> in 'configure' data store and print contents again
    strcpy (xpath, "/hosts/*");
-   n = srd_deleteNodes (sockfd, xpath);
+   n = srd_deleteNodes (sockfd, xpath, MODIFY_WITH_VALIDATION);
    printf ("From 'configure' data store, deleted %d number of nodes.\n\n", n);
    printf ("The updated contents of 'configure' are:\n");
    strcpy (xpath, "/*");
@@ -449,9 +449,9 @@ int main(int argc, char**argv)
 
    /********* END of examples for Operational Data Stores ***************************/
 
-   printf ("Going to sleep for 20 seconds before exiting.......\n");
+   printf ("Going to sleep for 3 seconds before exiting.......\n");
    fflush (stdout);
-   sleep (20);
+   sleep (3);
    printf ("About to disconnect from SYSREPOD server\n");
    fflush (stdout);
    close (connfd);

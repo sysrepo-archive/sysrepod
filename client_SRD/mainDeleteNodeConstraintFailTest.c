@@ -50,11 +50,11 @@ int main(int argc, char**argv)
 
    // Delete all nodes under <hosts> in 'configure' data store and print contents again
    strcpy (xpath, "/hosts/*");
-   n = srd_deleteNodes (sockfd, xpath);
+   n = srd_deleteNodes (sockfd, xpath, MODIFY_WITH_VALIDATION);
 
-   printf ("Going to sleep for 10 seconds before exiting.......\n");
+   printf ("Going to sleep for 3 seconds before exiting.......\n");
    fflush (stdout);
-   sleep (10);
+   sleep (3);
    printf ("About to disconnect from SYSREPOD server\n");
    fflush (stdout);
    srd_disconnect (sockfd); // disconnect this client, leave server running

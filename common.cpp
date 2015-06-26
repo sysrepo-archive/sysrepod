@@ -97,7 +97,7 @@ void common::addLogAndSpace (char *logline)
 	} else {
 	    CurrLogSize = CurrLogSize + size;
 	    // Since more than required data was written, we need to set file next-write-position to correct place for next log message
-	    	fseek (LogFD, CurrLogSize, SEEK_SET);
+	    fseek (LogFD, CurrLogSize, SEEK_SET);
 	    LogFileSize += sizeof(LogBuffer);
 	}
 }
@@ -151,6 +151,8 @@ void common::LogMsg (int logLevel, char * logline, bool fatal)
 		size = fprintf (LogFD, "%s ::: %s\n", timestr, logline);
 		CurrLogSize = CurrLogSize + size;
 	}
+
+    fflush (LogFD);
 
 	if (fatal) {
 		pthread_mutex_unlock(&LogMutex);

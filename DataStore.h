@@ -54,10 +54,11 @@ public:
 	int applyXPath (struct ClientInfo *cinfo, xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset);
 	int applyXSLT (struct ClientInfo *cinfo, char *xpath, char **printBuffPtr, int printBuffSize, int offset);
 	int printElementSet (xmlNodeSet *nodeSet, char **printBuffPtr, int printBuffSize, int initialOffset);
-	int updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, char *log, int logLen);
+	int updateNodes (struct ClientInfo *cinfo, xmlChar *xpath, xmlChar *newValue, ModifyOption mo, char *log, int logLen);
 	int printXPathAtomicResult (xmlXPathObjectPtr objset, char **printBuffPtr, int printBuffSize, int offset);
-	int addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, char *log, int logLen);
-	int deleteNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *log, int logLen);
+	int addNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, ModifyOption mo, char *log, int logLen);
+	int replaceNodes (struct ClientInfo *cinfo, xmlChar *xpath, char *nodeSetXML, ModifyOption mo, char *log, int logLen);
+	int deleteNodes (struct ClientInfo *cinfo, xmlChar *xpath, ModifyOption mo, char *log, int logLen);
 	int deleteSelectedNodes (xmlNodeSetPtr nodes);
 	bool applyConstraints (char *log, int logLen);
 	bool applyXSLT (char *filePath);

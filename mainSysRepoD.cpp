@@ -308,8 +308,8 @@ main (int argc, char **argv)
        listen(listenfd, SOMAXCONN); // SOMAXCONN defined by socket.h: Max # of clients
        while(!TerminateNow)
        {
-          sprintf(LogLine, "Listening on Port %d .....\n", ServerPort);
-          common::LogMsg(9, LogLine, false);
+          //sprintf(LogLine, "Listening on Port %d .....\n", ServerPort);
+          //common::LogMsg(9, LogLine, false);
           connfd = acceptClients (listenfd, 1000000); // timeout = 1 sec
           if(connfd > -1){
              sprintf(LogLine, "Received a connection request.\n");

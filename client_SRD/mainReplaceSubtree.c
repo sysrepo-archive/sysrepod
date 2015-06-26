@@ -1,16 +1,15 @@
 /*
- * mainHugeTest.c
+ * mainReplaceSubtree.c
  *
  * License: Apache 2.0
  *
- *  Created on: Jan 25, 2015
+ *  Created on: May 15, 2015
  *      Creator: Niraj Sharma
  *      Cisco Systems, Inc.
  *
  */
 
 #define MAIN_C_
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,16 +20,15 @@
 
 #include "srd.h"
 
-#define MSGLENFIELDWIDTH 7
-
 int main(int argc, char**argv)
 {
    int sockfd, n;
    char defaultServerIP []="127.0.0.1";
    char *serverIP;
    int serverPort = SRD_DEFAULTSERVERPORT;
-   char dataStoreName [100] = "huge";
+   char dataStoreName [100] = "runtime";
    char xpath[100];
+   char newValue[1000];
    char *value;
 
    if (argc != 2)
@@ -49,15 +47,23 @@ int main(int argc, char**argv)
 	   exit (1);
    }
 
-   // Example of a simple XPATH
-   strcpy (xpath, "//leaf1");
-   printf ("About to send xpath to server : %s\n", xpath);
-   srd_applyXPath (sockfd, xpath, &value);
-   if (value){
-	   printf ("Result of XPATH is: %s\n", value);
-	   free (value);
+   printf ("Let us replace all <interface> nodes by <address> node.\n");
+
+   strcpy (xpath, "/hosts/host/interfaces/interface");
+   strcpy (newValue, "<address><street>1 Infinity Loop</street><city>Cupertino</city><state>CA</state></address>");
+   if ((n=srd_replaceNodes (sockfd, xpath, newValue, MODIFY_NO_VALIDATION)) < 0){
+	   printf ("Error in replacing the nodes selected by XPath %s\n", xpath);
    } else {
-	   printf ("Result of XPATH not found OR is NULL.\n");
+	   printf ("Added new node:\n%s\nto %d number of nodes selected using XPath %s\n", newValue, n, xpath );
+           // printf the contents of the Data Store again to show the new content
+           strcpy (xpath, "/*");
+           srd_applyXPath (sockfd, xpath, &value);
+           if (value){
+              printf ("Updated Tree content is: \n%s\n", value);
+              free (value);
+           } else {
+              printf ("Result of XPATH not found.\n");
+           }
    }
 
    printf ("Going to sleep for 3 seconds before exiting.......\n");

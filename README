@@ -207,7 +207,7 @@
      To set environment variables for Pyang and run sysrepod, use the following commands:
      
      cd <pyang-dir>
-     ./env.sh
+     source ./env.sh
      cd <sysrepod/server>
      ./sysrepod param
 

@@ -30,6 +30,8 @@
 #define true 1
 #define false 0
 
+typedef enum {MODIFY_WITH_VALIDATION = 0, MODIFY_NO_VALIDATION, VALIDATE_NO_MODIFICATION} ModifyOption;
+
 #define SRD_DEFAULTSERVERPORT 3500
 #define SRD_DEFAULT_NAMESIZE 128
 /***********************************************
@@ -222,28 +224,70 @@ int  srd_unlockDataStore (int sockfd);
  * Parameters:
  * 		sockfd - The socket connected to the server
  * 		xpath  - The XPath expression to select nodes whose values is to be changed
- * 		value  - The new value to be assigned to the nodes seleted by the XPath expression
+ * 		value  - The new value to be assigned to the nodes selected by the XPath expression
+ * 		modifyOption - Modify with or without validataion or just validate with no chagnes
  *
- * Return Value: The number of nodes that got modified. Returns -1 on error.
+ * Return Value: If 'modifyOption == MODIFY_WITH_VALIDATION
+ *                            Returns the number of nodes that got modified. Returns -1 on error.
+ *               if 'modifyOption == MODIFY_NO_VALIDATION
+ *                            Returns the number of nodes that got modified. Returns -1 on error.
+ *               if 'modifyOption == VALIDATE_NO_MOIDFICATION
+ *                            Returns the number of nodes that can potentially get modified. Returns -1 on error.
+ *                            Returns -2 on Validation Failure. A return value of '0' means, no node
+ *                            got selected by the XPATH expression.
  *
  ************************************************/
-int  srd_updateNodes (int sockfd, char *xpath, char *value);
+int  srd_updateNodes (int sockfd, char *xpath, char *value, ModifyOption modifyOption);
 
 /***********************************************
  * Function : srd_addNodes
  *
- * Description: It adds a subtree to all nodes selected by the given XPath.
+ * Description: It adds a node set to all nodes selected by the given XPath.
  *
  * Parameters:
  * 		sockfd - The socket connected to the server
- * 		xpath  - The XPath expression to select nodes where the new sub-tree is to be added
+ * 		xpath  - The XPath expression to select nodes where the new node-set is to be added
  * 		value  - An XML string representing a set of nodes, e.g. "<street>1 Infinity Loop</street><city>Cupertino</city><state>CA</state>".
  * 		         There is no need to have a root element.
+ *		modifyOption - Modify with or without validataion or just validate with no chagnes
  *
- * Return Value: The number of nodes where the new sub-tree was added. Returns -1 on error.
+ * Return Value: If 'modifyOption == MODIFY_WITH_VALIDATION
+ *                            Returns the number of nodes where the new node-set got added. Returns -1 on error.
+ *                            Returns -2 on Validation Failure.
+ *               if 'modifyOption == MODIFY_NO_VALIDATION
+ *                            Returns the number of nodes where the new node-set got added. Returns -1 on error.
+ *               if 'modifyOption == VALIDATE_NO_MOIDFICATION
+ *                            Returns the number of nodes where the new node-set can potentially get added. Returns -1 on error.
+ *                            Returns -2 on Validation Failure. A return value of '0' means, no node
+ *                            got selected by the XPATH expression.
  *
  ************************************************/
-int  srd_addNodes (int sockfd, char *xpath, char *value);
+int  srd_addNodes (int sockfd, char *xpath, char *value, ModifyOption modifyOption);
+
+/***********************************************
+ * Function : srd_replaceNodes
+ *
+ * Description: It replaces all nodes selected by the given XPath by a single subtree.
+ *
+ * Parameters:
+ * 		sockfd - The socket connected to the server
+ * 		xpath  - The XPath expression to select nodes that are to be replaced by the node-set in 'value' parameter.
+ * 		value  - An XML string representing a single subtree, e.g. "<address><street>1 Infinity Loop</street><city>Cupertino</city><state>CA</state></address>".
+ * 		         The root element of this subtree is <address>.
+ *		modifyOption - Modify with or without validataion or just validate with no chagnes
+ *
+ * Return Value: If 'modifyOption == MODIFY_WITH_VALIDATION
+ *                            Returns the number of places where the new subtree got added. Returns -1 on error.
+ *                            Returns -2 on Validation Failure.
+ *               if 'modifyOption == MODIFY_NO_VALIDATION
+ *                            Returns the number of places where the new subtree got added. Returns -1 on error.
+ *               if 'modifyOption == VALIDATE_NO_MOIDFICATION
+ *                            Returns the number of places where the new subtree can potentially get added. Returns -1 on error.
+ *                            Returns -2 on Validation Failure. A return value of '0' means, no node
+ *                            got selected by the XPATH expression.
+ *
+ ************************************************/
+int  srd_replaceNodes (int sockfd, char *xpath, char *value, ModifyOption modifyOption);
 
 /***********************************************
  * Function : srd_deleteNodes
@@ -253,11 +297,24 @@ int  srd_addNodes (int sockfd, char *xpath, char *value);
  * Parameters:
  * 		sockfd - The socket connected to the server
  * 		xpath  - The XPath expression to select nodes to be deleted
+ *      modifyOption - Modify with or without validataion or just validate with no chagnes
  *
- * Return Value: The number of nodes deleted. Returns -1 on error.
+ * Return Value: If 'modifyOption == MODIFY_WITH_VALIDATION
+ *                            Returns the number of nodes deleted. Returns -1 on error.
+ *                            Returns -2 on Validation Failure.
+ *               if 'modifyOption == MODIFY_NO_VALIDATION
+ *                            Returns the number of nodes deleted. Returns -1 on error.
+ *               if 'modifyOption == VALIDATE_NO_MOIDFICATION
+ *                            Returns the number of nodes can potentially get deleted. Returns -1 on error.
+ *                            Returns -2 on Validation Failure. A return value of '0' means, no node
+ *                            got selected by the XPATH expression.
+ *               NOTE: A +ve return value is the count of immediate children of the nodes selected by XPATH that
+ *                     got deleted. These immediate children may also have nodes under them.
+ *                     The nodes under the children being deleted are not included in this count.
+ *
  *
  ************************************************/
-int srd_deleteNodes (int sockfd, char *xpath);
+int srd_deleteNodes (int sockfd, char *xpath, ModifyOption modifyOption);
 
 /***********************************************
  * Function : srd_createDataStore

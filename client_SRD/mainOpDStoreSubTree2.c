@@ -269,9 +269,9 @@ int main(int argc, char**argv)
 
    /********* END of examples for Operational Data Stores ***************************/
 
-   printf ("Going to sleep for 20 seconds before exiting.......\n");
+   printf ("Going to sleep for 3 seconds before exiting.......\n");
    fflush (stdout);
-   sleep (20);
+   sleep (3);
    printf ("About to disconnect from SYSREPOD server\n");
    fflush (stdout);
    close (connfd);

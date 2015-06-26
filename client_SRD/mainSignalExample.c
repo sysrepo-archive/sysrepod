@@ -41,7 +41,7 @@ modifyDataStore (int sockfd)
 	// Add a new sub-tree to all <interface> nodes
 	strcpy (xpath, "/hosts/host/interfaces/*");
 	strcpy (newValue, "<street>1 Infinity Loop</street><city>Cupertino</city><state>CA</state>");
-    if ((n=srd_addNodes (sockfd, xpath, newValue)) < 0){
+    if ((n=srd_addNodes (sockfd, xpath, newValue, MODIFY_WITH_VALIDATION)) < 0){
 		printf ("Error in adding a subtree to the nodes selected by XPath %s\n", xpath);
 	} else {
 		printf ("Added new subtree formed using the XML:\n%s\nto %d number of nodes selected using XPath %s\n", newValue, n, xpath );
@@ -86,9 +86,9 @@ int main(int argc, char**argv)
 	   modifyDataStore (sockfd);
    }
 
-   printf ("Going to sleep for 20 seconds before exiting.......\n");
+   printf ("Going to sleep for 3 seconds before exiting.......\n");
    fflush (stdout);
-   sleep (20);
+   sleep (3);
    printf ("About to disconnect from SYSREPOD server\n");
    fflush (stdout);
    srd_disconnect (sockfd); // disconnect this client, leave server running

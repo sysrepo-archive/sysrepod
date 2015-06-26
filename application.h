@@ -13,6 +13,8 @@
 
 #include <pthread.h>
 
+typedef enum {MODIFY_WITH_VALIDATION = 0, MODIFY_NO_VALIDATION, VALIDATE_NO_MODIFICATION} ModifyOption;
+
 // For clients, there are two states: CLNT_ENDED, CLNT_ACTIVE
 enum clientState {CLNT_ENDED, CLNT_ACTIVE};
 
