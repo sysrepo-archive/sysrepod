@@ -554,4 +554,103 @@ int srd_registerClientSignal (int sockfd, pid_t clientPID, int signalType);
  ************************************************/
 void srd_applyXSLT (int sockfd, char *xslt, char **value);
 
+/***********************************************
+ * Function : srd_startTransaction
+ *
+ * Description: It starts a transaction owned by the caller. If the caller disconnects without commiting its
+ * transaction, the transaction is aborted automatically. One client can start only one transaction at
+ * a time. It means there can not be nested transactions.
+ * All operations in a transaction must be applicable to only one data store. In other words, in
+ * the middle of a transaction data stores can not be switched. Only one client can be active within a
+ * data store when there is an open transaction for the data store. Starting a transaction will be successful
+ * only when no other client has a lock on the data store and no other client has an open transaction for the
+ * same data store.
+ *
+ * Parameters:
+ * 		sockfd   - The socket connected to the server
+ *
+ * Return Value: Returns 1 on successfull start of a transaction and 0 on failure. -1 means data store is locked
+ * or another transaction is in progress.
+ *
+ ************************************************/
+int srd_startTransaction (int sockfd);
+
+/***********************************************
+ * Function : srd_abortTransaction
+ *
+ * Description: It aborts an already started transaction. If the caller not in transaction,
+ * this call is ignored.
+ *
+ * Parameters:
+ * 		sockfd   - The socket connected to the server
+ *
+ * Return Value: Returns 1 on success and 0 on failure. -1 means no suitable transaction found for this caller.
+ *
+ ************************************************/
+int srd_abortTransaction (int sockfd);
+
+/***********************************************
+ * Function : srd_commitTransaction
+ *
+ * Description: It commits an already started transaction. If the caller not in transaction,
+ * this call is ignored. The returned transaction ID is unique across all transactions committed on all data stores
+ * during one execution cycle of the server.
+ *
+ * Parameters:
+ * 		sockfd   - The socket connected to the server
+ *
+ * Return Value: Returns transaction-ID ( >= 1) on success and 0 on failure. -1 means no suitable transaction found for this caller.
+ *
+ ************************************************/
+int srd_commitTransaction (int sockfd);
+
+/***********************************************
+ * Function : srd_rollbackTransaction
+ *
+ * Description: It rollbacks the transaction whose transaction ID is in the second parameter. Currently, the server
+ * has a capability to roll back only the last committed transaction on a specific data store.
+ * The following contexts are worth understanding:
+ *
+ * - A caller commits a transaction with ID 12 for data store (A).
+ * - Switches to data store (B).
+ * - Requests rollback of transaction 12.
+ * - Rollback will fail as the transaction 12 is not on data store (B).
+ * - The caller switches back to data store (A).
+ * - Repeats the request to rollback the transaciton 12.
+ * - The requested rollback will succeed if no other transaction was committed on data store (A), no other transaction is
+ *   in progress on (A) and (A) is not locked by any client. In other words, trasaction 12 is the last committed
+ *   transaction on data store (A).
+ *
+ * - A caller issues a request to rollback transaction ID 11 after committing transaction 12.
+ * - The request to rollback will fail as transaction 11 is not the last transaction.
+ *
+ * - A caller X issues a commit for transaction ID 12 on data store (A) and passes on this transaction ID to caller Y.
+ * - Caller Y switches to data store (A) and sends a request to rollback transaction 12.
+ * - The requested rollback will succeed if no other transaction was committed on data store (A), no other transaction is
+ *   in progress on (A) and (A) is not locked by any client. In other workds, transaction 12 is the last committed
+ *   transaction on data store (A).
+ *
+ * Parameters:
+ * 		sockfd   - The socket connected to the server
+ * 		transID  - The ID of the transaction that is to be rolled back.
+ *
+ * Return Value: Returns 1 on success and 0 on failure. -1 means no suitable transaction found for this caller.
+ *
+ ************************************************/
+int srd_rollbackTransaction (int sockfd, int transID);
+
+/***********************************************
+ * Function : srd_getLastTransactionId
+ *
+ * Description: It retrieves the ID of the last transaction committed by any client on the current data store.
+ *
+ * Parameters:
+ * 		sockfd   - The socket connected to the server
+ *
+ * Return Value: Returns transaction-ID ( >= 1) on success and 0 on failure. -1 means no suitable transaction found.
+ *
+ ************************************************/
+int srd_getLastTransactionId (int sockfd);
+
+
 #endif /* SRD_H_ */

@@ -34,14 +34,19 @@ private:
 	                             // checking constraints
 	char yangDir [PATHLEN + 1]; // dir that contains Yang filed.
 	int udpateSelectedNodes (xmlNodeSetPtr nodes, xmlChar *newValue);
-	struct ClientInfo *lockedBy;
 
 	xmlXPathObjectPtr getNodeSet (xmlChar *xpath, char *log);
 	xmlXPathObjectPtr getNodeSet (xmlDocPtr doc, xmlChar *xpath);
 	void removeChar(char *str, char ch);
 public:
+	struct ClientInfo *lockedBy;
 	// DOM treee that contains the data
 	xmlDocPtr doc;
+	// If a transaction is in progress, we need to save the pre-transaction dom tree in case transaction get aborted.
+	xmlDocPtr preTransactionStartDoc;
+	// To rollback last committed transaction, we need to save the pre-LastTransaction dom tree.
+	xmlDocPtr preLastCommittedTransactionDoc;
+	int lastCommittedTransactionId;
 	char name[MAXDATASTORENAMELEN + 1];
 
 	DataStore(char *filename, char *dsname, char * checkdir, char *yangDir);
@@ -50,6 +55,10 @@ public:
 	bool initialize (void);
 	bool initialize (char *xml);
 	int lockDS (struct ClientInfo *cinfo);
+	int startTransaction  (struct ClientInfo *cinfo, char *log, int logLen);
+	int commitTransaction (struct ClientInfo *cinfo, char *log, int logLen);
+	int abortTransaction (struct ClientInfo *cinfo, char *log, int logLen);
+	int rollbackTransaction (struct ClientInfo *cinfo, int transID, char *log, int logLen);
 	int unlockDS(struct ClientInfo *cinfo);
 	int applyXPath (struct ClientInfo *cinfo, xmlChar *xpath, char **printBuffPtr, int printBuffSize, int offset);
 	int applyXSLT (struct ClientInfo *cinfo, char *xpath, char **printBuffPtr, int printBuffSize, int offset);

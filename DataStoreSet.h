@@ -23,6 +23,7 @@ private:
 	int maxNumber;
 	DataStore **dataStoreList;
 	DataStore *getDataStore_noLock (char *name);
+	int globalTransactionCounter;
 public:
 	DataStoreSet();
 	virtual ~DataStoreSet();
@@ -34,6 +35,7 @@ public:
 	char *getList (void);
 	int  deleteDataStore (struct ClientInfo *cinfo, ClientSet *cset, char *name);
 	int copyDataStore (struct ClientInfo *cinfo, char *fromDS, char *toDS, char *printBuff, int printBuffSize);
+	int getNextTransactionId (char *log);
 };
 
 #endif /* DATASTORESET_H_ */

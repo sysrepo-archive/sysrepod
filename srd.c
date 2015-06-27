@@ -1207,3 +1207,93 @@ srd_DOMHandleXPath (int sockfd, xmlDocPtr ds, xmlChar *xpathExpr)
    }
    free (contentBuff);
 }
+
+int
+getServerIntResponse (int sockfd)
+{
+	char *result;
+	int intValue, n;
+
+	if (!srd_isServerResponseOK (sockfd, &result)){
+		printf ("libsrd.a: Server response to unlock data store is not OK.\n");
+		return 0;
+	}
+	if (result) {
+		n = sscanf (result, "%d", &intValue);
+		if (n == 0) {
+		    intValue = 0;
+		    printf ("libsrd.a: Unable to read result. Unpredictable modificatons done in data store.\n");
+		}
+		free (result);
+	} else {
+		intValue = 0;
+		printf ("libsrd.a: Unable to read result. Unpredictable modificatons done in data store.\n");
+	}
+	return intValue;
+}
+
+int
+srd_startTransaction (int sockfd)
+{
+	char msg[100];
+
+    sprintf (msg, "<xml><command>start_transaction</command></xml>");
+    if (!srd_sendServer (sockfd, msg, strlen(msg))){
+		printf ("libsrd.a: Error in sending msg: %s\n", msg);
+		return 0;
+	}
+    return getServerIntResponse (sockfd);
+}
+
+int
+srd_abortTransaction (int sockfd)
+{
+	char msg[100];
+
+    sprintf (msg, "<xml><command>abort_transaction</command></xml>");
+    if (!srd_sendServer (sockfd, msg, strlen(msg))){
+		printf ("libsrd.a: Error in sending msg: %s\n", msg);
+		return 0;
+	}
+    return getServerIntResponse (sockfd);
+}
+
+int
+srd_commitTransaction (int sockfd)
+{
+	char msg[100];
+
+    sprintf (msg, "<xml><command>commit_transaction</command></xml>");
+    if (!srd_sendServer (sockfd, msg, strlen(msg))){
+		printf ("libsrd.a: Error in sending msg: %s\n", msg);
+		return 0;
+	}
+    return getServerIntResponse (sockfd);
+}
+
+int
+srd_rollbackTransaction (int sockfd, int transID)
+{
+	char msg[100];
+
+	sprintf (msg, "<xml><command>rollback_transaction</command><param1>%d</param1></xml>", transID);
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+		return 0;
+	}
+	return getServerIntResponse (sockfd);
+}
+
+int
+srd_getLastTransactionId (int sockfd)
+{
+	char msg[100];
+
+	sprintf (msg, "<xml><command>get_lastTransactionId</command></xml>");
+	if (!srd_sendServer (sockfd, msg, strlen(msg))){
+	    printf ("libsrd.a: Error in sending msg: %s\n", msg);
+		return 0;
+	}
+	return getServerIntResponse (sockfd);
+}
+

@@ -385,10 +385,12 @@ ClientSet::thrdMain (void *arg)
 	   }
 	}
 	if (cinfo->dataStore != NULL){
+		char log[200]; int logsize = 200;
+		// If there is a transaction in progress abort it
+		cinfo->dataStore->abortTransaction ((struct ClientInfo *)cinfo, log, logsize);
 		// if data store is locked, free it
 		cinfo->dataStore->unlockDS((struct ClientInfo *)cinfo);
 	}
-
 
 	// remove this client's ownership of all Op Data Stores
 	OpDataStores->removeOwner (cinfo);

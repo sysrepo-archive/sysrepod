@@ -236,3 +236,50 @@
 
      NOTE that there may be many constraints that can not be expressed in Yang Model. One can use
      XSLT based constraints as described under 15) above to express any constraint.
+     
+17)  TRANSACTION MODEL: srd_startTransaction () starts a transaction owned by the caller. 
+     If the caller disconnects without commiting its transaction, the transaction is aborted automatically. 
+     One client can start only one transaction at a time. It means there can not be nested transactions.
+     All operations in a transaction must be applicable to only one data store. In other words, in
+     the middle of a transaction data stores can not be switched. Only one client can be active within a
+     data store when there is an open transaction for the data store. Starting a transaction will be successful
+     only when no other client has a lock on the data store and no other client has an open transaction for the
+     same data store. One can abort its transaction using srd_abortTransaction (). One can commit its transaction
+     using srd_commitTransaction (). It returns a transaction ID that is unique among all committed transactions on
+     all data stores during one execution of the server.
+     
+     One can use srd_rollbackTransaction () to rollback the transaction whose transaction ID is in the second parameter. 
+     Currently, the server has a capability to roll back only the last committed transaction on a specific data store.
+     The following contexts are worth understanding:
+ 
+   - A caller commits a transaction with ID 12 for data store (A).
+   - Switches to data store (B).
+   - Requests rollback of transaction 12.
+   - Rollback will fail as the transaction 12 is not on data store (B).
+   - The caller switches back to data store (A).
+   - Repeats the request to rollback the transaciton 12.
+   - The requested rollback will succeed if no other transaction was committed on data store (A), no other transaction is
+     in progress on (A) and (A) is not locked by any client. In other words, trasaction 12 is the last committed
+     transaction on data store (A).
+ 
+   - A caller issues a request to rollback transaction ID 11 after committing transaction 12.
+   - The request to rollback will fail as transaction 11 is not the last transaction.
+ 
+   - A caller X issues a commit for transaction ID 12 on data store (A) and passes on this transaction ID to caller Y.
+   - Caller Y switches to data store (A) and sends a request to rollback transaction 12.
+   - The requested rollback will succeed if no other transaction was committed on data store (A), no other transaction is
+     in progress on (A) and (A) is not locked by any client. In other workds, transaction 12 is the last committed
+     transaction on data store (A).
+     
+     srd_getLastTransactionId () retrieves the ID of the last transaction committed by any client on the current data store.
+     
+     TRANSACTION MODEL SUMMARY:
+     
+     srd_startTransaction ()    - To start a transaction
+     srd_abortTransaction ()    - To abort a transaction in progress
+     srd_commitTransaction   () - To commit a transaction in progress. Returns Transaction ID
+     srd_rollbackTransaction () - To rollback the last committed transaction whose ID is present in second parameter.
+                                  Transaction ID must have been returned by srd_commitTransaction () or
+                                  srd_getLastTransactionId () call.
+     srd_getLastTransactionId ()- To retrieve the ID of the last transaction committed by any client on the current data store.
+     

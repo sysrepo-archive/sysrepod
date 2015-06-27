@@ -17,12 +17,16 @@
 
 #include "common.h"
 #include "DataStore.h"
+#include "DataStoreSet.h"
 
 // DO NOT USE GLOBAL LOGGING MECHANISM IN THIS FILE
 
 DataStore::DataStore(char *dsname, char * filename, char *checkdir, char *yangdir)
 {
    doc = NULL;
+   preTransactionStartDoc = NULL;
+   preLastCommittedTransactionDoc = NULL;
+   lastCommittedTransactionId = 0;
    if (filename == NULL || strlen(filename) > PATHLEN){
 	   fileName[0] = '\0';
 	   printf ("File path for Data Store is longer than the limit %d or NULL.\n", PATHLEN);
@@ -53,6 +57,9 @@ DataStore::DataStore(char *dsname, char * filename, char *checkdir, char *yangdi
 DataStore::DataStore(char *dsname)
 {
    doc = NULL;
+   preTransactionStartDoc = NULL;
+   preLastCommittedTransactionDoc = NULL;
+   lastCommittedTransactionId = 0;
    fileName[0] = '\0';
    if (dsname == NULL || strlen (dsname) > MAXDATASTORENAMELEN){
 	   printf ("Data Store name '%s' is longer than the limit %d.\n", dsname, MAXDATASTORENAMELEN);
@@ -66,6 +73,8 @@ DataStore::DataStore(char *dsname)
 DataStore::~DataStore()
 {
    if (doc) xmlFreeDoc (doc);
+   if (preTransactionStartDoc) xmlFreeDoc (preTransactionStartDoc);
+   if (preTransactionStartDoc) xmlFreeDoc(preTransactionStartDoc);
    if (lockedBy) {
 	   unlockDS(lockedBy);
 	   printf ("Looks like a harmless logical error. Control should not have reached here.\n");
@@ -375,6 +384,8 @@ int
 DataStore::lockDS(struct ClientInfo *cinfo)
 {
 	int n = 1;
+	if (lockedBy == cinfo) return 0; // already locked by same client - this line added while
+	                                 // adding transaction as startTransaction locks DS
 	n = pthread_mutex_lock(&dsMutex);
 	if (n == 0){
 		lockedBy = cinfo;
@@ -383,9 +394,130 @@ DataStore::lockDS(struct ClientInfo *cinfo)
 }
 
 int
+DataStore::startTransaction (struct ClientInfo *cinfo, char *log, int logLen)
+{
+	if (lockDS(cinfo)){
+		sprintf (log, "Error in locking data store");
+		return 0;
+	}
+	if (preTransactionStartDoc){
+		// Two consecutive calls to startTransaction will lead control here as lock will succeed second time as
+		// lock is already held by this client.
+		// A transaction is already in progress by this client, can not start another one
+		sprintf (log, "You already started a transaction, can not start another one before finishing first one.");
+		return 0;
+	}
+	preTransactionStartDoc = xmlCopyDoc (doc, 1);
+	if (preTransactionStartDoc == NULL){
+		sprintf (log, "Error in creating a duplicate DOM tree.");
+		unlockDS (cinfo);
+		return 0;
+	}
+	// do not unlock data store as it should remain locked for the entire duration of the transaction
+	return 1;
+}
+
+int
+DataStore::commitTransaction (struct ClientInfo *cinfo, char *log, int logLen)
+{
+	int value;
+	if (cinfo != lockedBy){
+		sprintf (log, "You are not the owner of this transaction or lock");
+		return 0;
+	}
+	// if no transaction started, there is nothing to commit
+	if (!preTransactionStartDoc) {
+		sprintf (log, "No transaction in progress, not unlocking the data store.");
+		return 0;
+	}
+	// generate a global transaction id
+	lastCommittedTransactionId = DataStores->getNextTransactionId(log);
+	log[0] = '\0';
+	if (lastCommittedTransactionId < 1){
+		sprintf (log, "Error in getting global transaction ID, may not be able to rollback.");
+		value = lastCommittedTransactionId = 0;
+	} else {
+	    value = lastCommittedTransactionId;
+	}
+	if (preLastCommittedTransactionDoc){
+		xmlFreeDoc (preLastCommittedTransactionDoc);
+		preLastCommittedTransactionDoc = NULL;
+	}
+	if (value > 0){
+		preLastCommittedTransactionDoc = preTransactionStartDoc;
+	} else {
+		xmlFreeDoc (preTransactionStartDoc);
+	}
+	preTransactionStartDoc = NULL;
+	if(unlockDS(cinfo)){
+		sprintf (log, "Error in unlocking data store");
+		return 0;
+	}
+	return value;
+}
+
+int
+DataStore::abortTransaction (struct ClientInfo *cinfo, char *log, int logLen)
+{
+	if (cinfo != lockedBy){
+		sprintf (log, "You are not the owner of this transaction or lock");
+		return 0;
+	}
+	// if no transaction started, there is nothing to abort
+	if (!preTransactionStartDoc) {
+		sprintf (log, "No transaction in progress, not unlocking the data store.");
+		return 0;
+	}
+	log[0] = '\0';
+	xmlFreeDoc (doc);
+	doc = preTransactionStartDoc;
+	preTransactionStartDoc = NULL;
+	if(unlockDS(cinfo)){
+		sprintf (log, "Error in unlocking data store");
+		return 0;
+	}
+	return 1;
+}
+
+int
+DataStore::rollbackTransaction (struct ClientInfo *cinfo, int transID, char *log, int logLen)
+{
+	if (lockDS(cinfo)){
+		sprintf (log, "Error in locking data store");
+		return 0;
+	}
+	if (preTransactionStartDoc){
+		// A transaction is already in progress by this client, can not perform rollback
+		sprintf (log, "You already started a transaction, can not rollback previous transaction. First abort the current one.");
+		// Do not UNLOCK DS here. It was alreay locked some whare else. The above lock call actually did not perform lock as this
+		// client already had a lock.
+		return 0;
+	}
+	if (transID != lastCommittedTransactionId || lastCommittedTransactionId < 1 || preLastCommittedTransactionDoc == NULL){
+		// Nothing to rollback
+		sprintf (log, "Nothing to rollback.");
+		unlockDS(cinfo);
+		return 0;
+	}
+    // we can rollback now
+	xmlFreeDoc (doc);
+	doc = preLastCommittedTransactionDoc;
+	preLastCommittedTransactionDoc = NULL;
+	lastCommittedTransactionId = 0;
+	if(unlockDS(cinfo)){
+		sprintf (log, "Error in unlocking data store");
+		return 0;
+	}
+	return 1;
+}
+
+int
 DataStore::unlockDS(struct ClientInfo *cinfo)
 {
-	int n = 1;
+	int n = 1; // 1 - error
+	// if under transaction - can not unlock
+	if (preTransactionStartDoc) return 1; // added this line while adding transaction. As commit or abort
+	                                      // transaction is supposed to unlock DS
 	if (lockedBy == cinfo){
 	    n = pthread_mutex_unlock(&dsMutex);
 	    if (n == 0) lockedBy = NULL;

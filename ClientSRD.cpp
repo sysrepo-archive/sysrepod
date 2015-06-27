@@ -55,6 +55,12 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 			return 0;
 	}
 	if (strcmp((char *)command, "set_dataStore") == 0){
+		// if this client is already has a lock on a data store or is in the middle of a transaction
+		// it can not switch data stores
+		if (cinfo->dataStore && ((struct clientInfo *)(cinfo->dataStore->lockedBy) == (struct clientInfo *)cinfo || ((struct clientInfo *)(cinfo->dataStore->lockedBy) == (struct clientInfo *)cinfo && cinfo->dataStore->preTransactionStartDoc))){
+			sprintf (outBuffer, "<xml><error>Data Store can not be switched if you hold a lock on it or your transaction is in progress on it</error></xml>");
+			common::SendMessage(cinfo->sock, outBuffer);
+		} else {
 		    strcpy ((char *) xpath, "/xml/param1");
             param1 = ClientSet::GetFirstNodeValue(doc, xpath);
             if(param1 == NULL){
@@ -71,6 +77,7 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
                common::SendMessage(cinfo->sock, outBuffer);
                xmlFree (param1);
             }
+		}
 	} else if (strcmp((char *)command, "stopUsing_opDataStore") == 0){
 	    strcpy ((char *) xpath, "/xml/param1");
         param1 = ClientSet::GetFirstNodeValue(doc, xpath);
@@ -386,6 +393,71 @@ Client_SRD::processCommand (char *commandXML, char *outBuffer, int outBufferSize
 		    sprintf (outBuffer, "<xml><ok/></xml>");
 		} else {
 		    sprintf (outBuffer, "<xml><error>Unable to unlock data store %s</error></xml>", cinfo->dataStore->name);
+		}
+		common::SendMessage(cinfo->sock, outBuffer);
+	} else if (strcmp ((char *)command, "start_transaction") == 0){
+		char log[200];
+		int logsize = 200;
+		if (cinfo->dataStore == NULL){
+			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+		} else if(cinfo->dataStore->startTransaction((struct ClientInfo *)cinfo, log, logsize)){
+	        sprintf (outBuffer, "<xml><ok>1</ok></xml>");
+	    } else {
+	        sprintf (outBuffer, "<xml><error>Unable to start transaction for data store %s</error></xml>", cinfo->dataStore->name);
+	    }
+		common::SendMessage(cinfo->sock, outBuffer);
+	} else if (strcmp ((char *)command, "commit_transaction") == 0){
+		char log[200];
+		int logsize = 200;
+		int value;
+		if (cinfo->dataStore == NULL){
+			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+		} else if((value = cinfo->dataStore->commitTransaction((struct ClientInfo *)cinfo, log, logsize)) > 0){
+		    sprintf (outBuffer, "<xml><ok>%d</ok></xml>", value);
+		} else {
+		    sprintf (outBuffer, "<xml><error>Unable to commit transaction for data store %s</error></xml>", cinfo->dataStore->name);
+		}
+	    common::SendMessage(cinfo->sock, outBuffer);
+	} else if (strcmp ((char *)command, "abort_transaction") == 0){
+		char log[200];
+		int logsize = 200;
+		if (cinfo->dataStore == NULL){
+			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+		} else if(cinfo->dataStore->abortTransaction((struct ClientInfo *)cinfo, log, logsize)){
+		    sprintf (outBuffer, "<xml><ok>1</ok></xml>");
+		} else {
+		    sprintf (outBuffer, "<xml><error>Unable to start transaction for data store %s</error></xml>", cinfo->dataStore->name);
+		}
+		common::SendMessage(cinfo->sock, outBuffer);
+	} else if (strcmp ((char *)command, "get_lastTransactionId") == 0){
+		char log[200];
+		int logsize = 200;
+		if (cinfo->dataStore == NULL){
+			sprintf (outBuffer, "<xml><error>Data Store not set. Use srd_setDataStore() first</error></xml>");
+		} else if(cinfo->dataStore->lastCommittedTransactionId > 0){
+		    sprintf (outBuffer, "<xml><ok>%d</ok></xml>", cinfo->dataStore->lastCommittedTransactionId);
+		} else {
+		    sprintf (outBuffer, "<xml><error>There is no committed transaction for data store %s</error></xml>", cinfo->dataStore->name);
+		}
+		common::SendMessage(cinfo->sock, outBuffer);
+	} else if (strcmp((char *)command, "rollback_transaction") == 0){
+		char log[200];
+		int  logsize = 200;
+		// param1 contains Transaction ID
+		strcpy ((char *) xpath, "/xml/param1");
+		param1 = ClientSet::GetFirstNodeValue(doc, xpath);
+		if(param1 == NULL){
+		    sprintf (outBuffer, "<xml><error>Transaction ID not found</error></xml>");
+		} else {
+			int n = 0;
+			int transId = -1;
+			n = sscanf ((char *)param1, "%d", &transId);
+			if (n != 1) {
+				sprintf (outBuffer, "<xml><error>Transaction ID is not a proper integer</error></xml>");
+			} else if (cinfo->dataStore->rollbackTransaction ((struct ClientInfo *)cinfo, transId, log, logsize)){
+                sprintf (outBuffer, "<xml><ok>1</ok></xml>");
+			}
+		    xmlFree (param1);
 		}
 		common::SendMessage(cinfo->sock, outBuffer);
 	} else if (strcmp ((char *)command, "update_nodes") == 0){

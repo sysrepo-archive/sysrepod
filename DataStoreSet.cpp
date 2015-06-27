@@ -19,6 +19,7 @@ DataStoreSet::DataStoreSet() {
 	dataStoreList = NULL;
 	count = 0;
 	maxNumber = 0;
+	globalTransactionCounter = 1;
 
 }
 
@@ -228,6 +229,20 @@ DataStoreSet::deleteDataStore (struct ClientInfo *cinfo, ClientSet *cset, char *
 	}
 	pthread_mutex_unlock(&dsMutex);
 	return retValue;
+}
+
+int
+DataStoreSet::getNextTransactionId (char *log)
+{
+	int value;
+	if(pthread_mutex_lock(&dsMutex)){
+		sprintf (log, "Unable to lock data store set.");
+		return 0;
+	}
+	globalTransactionCounter ++;
+	value = globalTransactionCounter;
+	pthread_mutex_unlock(&dsMutex);
+	return value;
 }
 
 int
