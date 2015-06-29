@@ -4,10 +4,10 @@ AR = ar
 LIBXML2_INCLUDE_PATH = /usr/include/libxml2
 PREFIX = /usr
 
-all: sysrepod client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/yangTest client_SRD/replaceSubtree  client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/opDStoreGetSubTree client_SRD/hugeTest client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest  server/genHuge
+all: sysrepod client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/yangTest client_SRD/testTransaction client_SRD/replaceSubtree  client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/opDStoreGetSubTree client_SRD/hugeTest client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest  server/genHuge
 
 clean:
-	rm -f *.o sysrepod libsrd.a server/genHuge client_SRD/hugeTest client_SRD/replaceSubtree client_SRD/yangTest client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest client_SRD/opDStoreGetSubTree client_SRD/*.o
+	rm -f *.o sysrepod libsrd.a server/genHuge client_SRD/hugeTest client_SRD/testTransaction client_SRD/replaceSubtree client_SRD/yangTest client_SRD/clientsrd client_SRD/opDStoreClient client_SRD/opDStoreSubTree1 client_SRD/opDStoreSubTree2 client_SRD/signalTest client_SRD/xsltTest client_SRD/xsltTest_1 client_SRD/deleteNodeConstraintFailTest client_SRD/opDStoreGetSubTree client_SRD/*.o
 
 sysrepod: common.o mainSysRepoD.o ClientSet.o DataStore.o DataStoreSet.o Client.o ClientSRD.o global.h application.h OpDataStore.o OpDataStoreSet.o
 	$(CXX) -g -o sysrepod mainSysRepoD.o common.o ClientSet.o DataStore.o DataStoreSet.o OpDataStore.o OpDataStoreSet.o Client.o ClientSRD.o -pthread -lxml2 -lxslt
@@ -99,6 +99,12 @@ client_SRD/replaceSubtree: client_SRD/mainReplaceSubtree.o
 client_SRD/mainReplaceSubtree.o: client_SRD/mainReplaceSubtree.c
 	$(CC) -I$(LIBXML2_INCLUDE_PATH) -I. -g -o client_SRD/mainReplaceSubtree.o -c client_SRD/mainReplaceSubtree.c
 	
+client_SRD/testTransaction: client_SRD/mainTestTransaction.o
+	$(CC) -g -o client_SRD/testTransaction client_SRD/mainTestTransaction.o libsrd.a -lxml2
+	
+client_SRD/mainTestTransaction.o: client_SRD/mainTestTransaction.c
+	$(CC) -I$(LIBXML2_INCLUDE_PATH) -I. -g -o client_SRD/mainTestTransaction.o -c client_SRD/mainTestTransaction.c
+
 client_SRD/yangTest: client_SRD/mainYangTest.o
 	$(CC) -g -o client_SRD/yangTest client_SRD/mainYangTest.o libsrd.a -lxml2
 	

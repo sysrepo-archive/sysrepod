@@ -516,7 +516,7 @@ DataStore::unlockDS(struct ClientInfo *cinfo)
 {
 	int n = 1; // 1 - error
 	// if under transaction - can not unlock
-	if (preTransactionStartDoc) return 1; // added this line while adding transaction. As commit or abort
+	if (preTransactionStartDoc) return 0; // added this line while adding transaction. As commit or abort
 	                                      // transaction is supposed to unlock DS
 	if (lockedBy == cinfo){
 	    n = pthread_mutex_unlock(&dsMutex);

@@ -283,3 +283,6 @@
                                   srd_getLastTransactionId () call.
      srd_getLastTransactionId ()- To retrieve the ID of the last transaction committed by any client on the current data store.
      
+     To run a sample program to test transacton, start syrepod and execute the following instructions:
+     cd client_SRD
+     ./testTransaction
