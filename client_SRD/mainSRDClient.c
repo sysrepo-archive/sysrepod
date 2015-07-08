@@ -353,6 +353,13 @@ int main(int argc, char**argv)
 	   srd_disconnect (sockfd);
 	   exit (0);
    }
+   // Print a list of the Operational Data Stores
+   if (srd_listOpDataStores (sockfd, &value)){
+       printf ("The list of Operational Data Stores is: %s\n", value);
+       free (value);
+   } else {
+       printf ("Failed to get the list of Operational Data Stores\n");
+   }
 
    // Need to give a socket to the SysrepoD on which this daemon will be listening on to receive Op Data Store related commands.
    char myIPAddress[100] = "127.0.0.1";

@@ -39,7 +39,7 @@ int main(int argc, char**argv)
 	   exit (1);
    }
 
-   strcpy (opDataStoreName, "urn:ietf:params:xml:ns:yang:ietf-interfaces:interfaces-state");
+   strcpy (opDataStoreName, "op_01");
    // strcpy (xpath, "/packet_stats/*");
    strcpy(xpath, "/data/*");
    srd_applyXPathOpDataStore (sockfd, opDataStoreName, xpath, &value);
