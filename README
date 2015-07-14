@@ -286,3 +286,40 @@
      To run a sample program to test transacton, start syrepod and execute the following instructions:
      cd client_SRD
      ./testTransaction
+
+18) 'edit-config' command in NETCONF has many options and is more complex than other commands. Below a description
+    about mapping 'edit-config' command to SRD API is given in case there is a need to implement 'edit-config' command
+    using SRD API.
+
+    <edit-config> can have different types of operations within it. Each is described below:
+          "merge"   : It is used to change an atomic values. srd_updateNodes () call performs this task.
+
+          "replace" : It is used to replace a sub-tree by another one. If the specified sub-tree does not exist in 
+                      the data store, add a new sub-tree using the values present in the command.
+                      srd_replaceNodes () call performs this task.
+
+          "create"  : A new sub-tree is to be added. If it already exists, report error. 
+                      It can be implemented using srd_addNodes ().
+                      Presence of sub-tree can be tested using srd_applyXPath ().
+
+          "delete"  : It is used to delete a subtree. It can be implemented using srd_deleteNodes (). 
+                      This call returns the number of nodes deleted. Agent can use the returned value to
+                      determine if there is an error or not.
+
+          "remove"  : It is same as "delete" except that if sub-tree does not exist, "remove" does not 
+                      report error. It can be implemented using srd_deleteNode().
+
+    With <edit-config> command, one can specify <test-options>. 
+
+          "test-then-set": If validation fails, do not perform the <edit-config> operation. All SysrepoD edit
+                           commands have a parameter to implement this option.
+          "set"          : Set the values without any validation. This option is present in SysrepoD.
+          "test-only"    : Just test, do not set any values. This options is present in SysrepoD.
+
+   With <edit-config> command, one can specify <error-options>.
+
+          "stop-on-error"     : It is the current behavior SysrepoD.
+          "continue-on-error" : It means continure on syntatic and semantic errors. It can be specified in
+                                SysrepoD calls.
+          "rollback-on-error" : SysrepoD follows this behavior by default.
+
