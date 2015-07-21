@@ -7,7 +7,10 @@
 
 
 1) To build, use 'make'.
-2) To clean, use 'make clean'.
+2) To clean, use 'make clean'. After downloading from GitHub, create the directory "server/xsltDir" as it mentioned in
+   "server/param" file as a parameter to create a data store. Also install "jing" and "pyang" on your computer using
+   the instruction given under 16) below. After these steps, all example programs will run without any error.
+
 3) To run server listening on 3500 port:
       cd server
       ./sysrepod param
