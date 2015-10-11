@@ -34,7 +34,7 @@ Or:
 sysrepo> send <xml><command>disconnect</command></etc>
 
 The last "send" command example exposes a bug in the current software:
-Since the send string is opaque to cli, the cil send routine does not
+Since the send string is opaque to cli, the cli send routine does not
 properly update the connection state machine to disconnected.
 
 
