@@ -610,8 +610,8 @@ int  srd_createDataStore (int sockfd, char *name, char *value, char *xsdDir, cha
 	}
 
 	msgSpace = strlen(name) + strlen (value) + 100;
-	if (xsdDir)  msgSpace = msgSpace + strlen (xsdDir);
-	if (xsltDir) msgSpace = msgSpace + strlen (xsltDir);
+	if (xsdDir)  msgSpace = msgSpace + strlen (xsdDir) + 17;
+	if (xsltDir) msgSpace = msgSpace + strlen (xsltDir) + 17;
 	msg = (char *)malloc (msgSpace);
 	if (!msg){
 		printf ("libsrd.a: Unable to allocate space.\n");

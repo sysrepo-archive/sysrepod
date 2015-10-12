@@ -67,6 +67,7 @@ DataStore::DataStore(char *dsname)
    } else {
 	   strcpy (name, dsname);
    }
+   checkDir[0] = '\0';
    lockedBy = NULL;
 }
 
